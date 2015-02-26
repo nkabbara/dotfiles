@@ -1,5 +1,4 @@
-#Testing boostrap.sh
-
+export EDITOR=/usr/bin/vim
 export PATH=$PATH:/opt/local/bin:/usr/bin:/usr/local/bin:/Users/nkabbara/bin:/usr/local/bin/android-sdk-mac_86/tools:/usr/local/bin/eclipse:/Users/nkabbara/.rvm/gems/ree-1.8.7-2011.03@zipzoomauto/bin
 export MANPATH=$MANPATH:/opt/local/share/man
 export INFOPATH=$INFOPATH:/opt/local/share/info

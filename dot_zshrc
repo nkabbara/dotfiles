@@ -1,0 +1,36 @@
+set -o vi
+
+function cdg () {
+   cdargs -f ~/.cdargs "$1" && cd "`cat "$HOME/.cdargsresult"`" ;
+}
+
+export EDITOR=/usr/local/bin/vim
+export MANPATH=$MANPATH:/opt/local/share/man
+export INFOPATH=$INFOPATH:/opt/local/share/info
+export PATH=/opt/local/bin:/opt/local/sbin:/usr/local/bin/node:$PATH
+export PATH="$HOME/.yarn/bin:$HOME/.config/yarn/global/node_modules/.bin:$PATH"
+export PATH="$HOME/.rbenv/bin:$PATH"
+export PATH="/usr/local/go-bin:$PATH"
+export PATH="/opt/homebrew/bin:$PATH"
+
+
+
+export FZF_DEFAULT_COMMAND='rg --files'
+
+## Go
+export GOPATH=$HOME/dev/go
+export PATH="$PATH:$(go env GOPATH)/bin"
+
+
+alias l='ls -lrthG'
+alias vi='nvim -p'
+alias vim='nvim -p'
+alias b='bundle exec '
+alias gist='gh gist create '
+alias g='git'
+alias sudo='sudo env PATH=$PATH'
+
+. /opt/homebrew/opt/asdf/libexec/asdf.sh
+
+# opencode
+export PATH=/Users/nkabbara/.opencode/bin:$PATH

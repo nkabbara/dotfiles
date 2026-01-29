@@ -11,7 +11,7 @@ function cdg () {
    cdargs -f ~/.cdargs "$1" && cd "`cat "$HOME/.cdargsresult"`" ;
 }
 
-export EDITOR=/usr/local/bin/vim
+export EDITOR=/opt/homebrew/bin/nvim
 export MANPATH=$MANPATH:/opt/local/share/man
 export INFOPATH=$INFOPATH:/opt/local/share/info
 export PATH=/opt/local/bin:/opt/local/sbin:/usr/local/bin/node:$PATH

@@ -1,0 +1,21 @@
+0000000000000000000000000000000000000000 ba7f088d24bb4e4eedc29a9eb24c0fa88730c149 Nash Kabbara <nash.kabbara@kape.com> 1760127615 -0300	clone: from github.com:nkabbara/nashvim.nvim.git
+ba7f088d24bb4e4eedc29a9eb24c0fa88730c149 709c8a6d7d245d2a6286d325a68666a0ce472eda Nash Kabbara <nash.kabbara@kape.com> 1760323547 -0300	commit: init
+709c8a6d7d245d2a6286d325a68666a0ce472eda d0a0a12d30da6d09c15383c417613ecd746a79bd Nash Kabbara <nash.kabbara@kape.com> 1760332326 -0300	commit: add neovide settings
+d0a0a12d30da6d09c15383c417613ecd746a79bd 3c3048265b06e9d3c15f658eb023d4c68d4d44ff Nash Kabbara <nash.kabbara@kape.com> 1760332414 -0300	commit: improve neovide settings
+3c3048265b06e9d3c15f658eb023d4c68d4d44ff 69d61b32325c30cac19aa7ce4cd0a4525e1416dd Nash Kabbara <nash.kabbara@kape.com> 1760499731 -0300	commit: add zen mode. Add a terminal plugin
+69d61b32325c30cac19aa7ce4cd0a4525e1416dd a611a9b7a76b5a4dbdb30bc9cfccb59006fd9d1d Nash Kabbara <nash.kabbara@kape.com> 1760564745 -0300	commit: spacing change
+a611a9b7a76b5a4dbdb30bc9cfccb59006fd9d1d 26de13cfc0aabe6585d96a6f44ddadf4a6e1a7f2 Nash Kabbara <nash.kabbara@kape.com> 1760570030 -0300	commit: WIP: adding multi term functionality
+26de13cfc0aabe6585d96a6f44ddadf4a6e1a7f2 f4f89c49f51fa255aae5f7a530ac7d5536f8fac3 Nash Kabbara <nash.kabbara@kape.com> 1760579962 -0300	commit: Add multiple terms
+f4f89c49f51fa255aae5f7a530ac7d5536f8fac3 c58da6dad20dbd479272ee3618f2b0fb76f32a43 Nash Kabbara <nash.kabbara@kape.com> 1760661556 -0300	commit: fix bug in floatingterm; add some neovide settings
+c58da6dad20dbd479272ee3618f2b0fb76f32a43 22b3df78a2b20bf37cb9a4804c1c2db9b360551d Nash Kabbara <nash.kabbara@kape.com> 1760755712 -0300	pull: Fast-forward
+22b3df78a2b20bf37cb9a4804c1c2db9b360551d 9cd43007d063194d49ae948b7c185b0261be5b12 Nash Kabbara <nash.kabbara@kape.com> 1761167543 -0300	commit: spacing issues
+9cd43007d063194d49ae948b7c185b0261be5b12 92c1ccc62998ae7c33363a6066c2aadec85386b7 Nash Kabbara <nash.kabbara@kape.com> 1761278103 -0300	commit: add q to quit in n mode
+92c1ccc62998ae7c33363a6066c2aadec85386b7 969873e66d0c41e37a0ae7225c257d1d1d70854d Nash Kabbara <nash.kabbara@kape.com> 1761437559 -0300	commit: add oil and remove mini.files
+969873e66d0c41e37a0ae7225c257d1d1d70854d f2f57bf2979ab64b511c206db377ca13e31343bc Nash Kabbara <nash.kabbara@kape.com> 1761665845 -0300	commit: markdown settings
+f2f57bf2979ab64b511c206db377ca13e31343bc 0bb1758943de12217a71a1ad2053f004fec20e8e Nash Kabbara <nash.kabbara@kape.com> 1761918794 -0300	commit: move sneak to its own dir
+0bb1758943de12217a71a1ad2053f004fec20e8e 2943855a4a5e45fdc6d6cb1765372e70b2063fdf Nash Kabbara <nash.kabbara@kape.com> 1761968652 -0300	commit: fix s double mapping
+2943855a4a5e45fdc6d6cb1765372e70b2063fdf 71e428fa4477a37e0a1ffffc428231cffb4b3625 Nash Kabbara <nash.kabbara@kape.com> 1761971394 -0300	commit: fixed s conflict
+71e428fa4477a37e0a1ffffc428231cffb4b3625 20fa720e4af6401b974308e6b37a16d7b72425f2 Nash Kabbara <nash.kabbara@kape.com> 1762546441 -0300	pull: Fast-forward
+20fa720e4af6401b974308e6b37a16d7b72425f2 b76e04bbdc9b57a63cfa9ae211605b5102b07e94 Nash Kabbara <nash.kabbara@kape.com> 1762796382 -0300	pull: Fast-forward
+b76e04bbdc9b57a63cfa9ae211605b5102b07e94 22c91fefa1589dcd7c0f6308b53605a1b3596925 Nash Kabbara <nash.kabbara@kape.com> 1768135186 -0300	commit: chang leader
+22c91fefa1589dcd7c0f6308b53605a1b3596925 6a9ba571dde0b74579dc1eaca4fc007f7032fa2f Nash Kabbara <nash.kabbara@kape.com> 1768311332 -0300	pull: Fast-forward

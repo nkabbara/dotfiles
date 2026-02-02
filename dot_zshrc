@@ -32,6 +32,7 @@ alias gist='gh gist create '
 alias g='git'
 alias sudo='sudo env PATH=$PATH'
 alias oc='opencode'
+alias cm='chezmoi'
 
 
 # functions

@@ -7,6 +7,7 @@ fi
 
 
 # exports
+export oc=/opt/homebrew/bin/nvim
 export EDITOR=/opt/homebrew/bin/nvim
 export FZF_DEFAULT_COMMAND='rg --files'
 export KANATA_TRAY_CONFIG_DIR="/Users/nkabbara/.config/kanata/"
@@ -30,6 +31,7 @@ alias b='bundle exec '
 alias gist='gh gist create '
 alias g='git'
 alias sudo='sudo env PATH=$PATH'
+alias oc='opencode'
 
 
 # functions

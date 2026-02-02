@@ -95,9 +95,9 @@
 (deflayer sys1 
   esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX         XX    XX    XX    XX    XX      XX    XX    XX    XX    XX     XX    XX    XX
-  XX         `     S-2   S-3   S-4   XX      XX    S-8   S-[   S-]   S-7    S-7    XX    XX 
-  S--         S-`   S-+   S-'   S-5   XX      XX     =     S-9   S-0   [      ]     XX
-             S-1   \     S-\   S-6   XX      XX       XX  -   S-,   S-.   S-/   XX XX
+  XX         `     S-2   S-3   S-4   XX      XX    S-8   S-[   S-]   \     \    XX    XX 
+  S-7         S-`   S-+   S-'   S-5   XX      XX     =     S-9   S-0   [      ]     XX
+             S-1    S--     S-\   S-6   XX      XX       XX  -   S-,   S-.   S-/   XX XX
   XX   XX   XX lmet XX XX 
 )
 (deflayer sys2 

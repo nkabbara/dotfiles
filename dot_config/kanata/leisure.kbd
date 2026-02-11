@@ -32,20 +32,17 @@
    e (tap-hold $tap-time $hold-time e @l_sys2)
    n (tap-hold $tap-time $hold-time-slow n @l_num)
    i (tap-hold $tap-time $hold-time-slow i @l_num)
-   ;;l (tap-hold $tap-time $hold-time-slow l lctl)
-   ;;d (tap-hold $tap-time $hold-time d lalt)
    x (tap-hold $tap-time $hold-time-slow x lctl)
    m (tap-hold $tap-time $hold-time m lalt)
-   ;; w (tap-hold $tap-time $hold-time w lmet)
    . (tap-hold $tap-time $hold-time-slow . lctl)
    , (tap-hold $tap-time $hold-time , lalt)
-   ;; f (tap-hold $tap-time $hold-time f rmet)
    q (tap-hold $tap-time $hold-time q lsft)
    / (tap-hold $tap-time $hold-time / rsft)
    c (tap-hold $tap-time $hold-time c lmeta)
    p (tap-hold $tap-time $hold-time p rmeta)
    d_h (tap-hold $tap-time $hold-time del home)
    p_e (tap-hold $tap-time $hold-time M-[ end)
+   m_v (tap-hold $tap-time $hold-time M-v S-M-v)
    c_uz_r (chord underscore r)
    c_uz_t (chord underscore t)
    c_uz_s (chord underscore s)
@@ -53,6 +50,7 @@
    c_apos_a (chord apos a)
    c_s_tab (tap-hold $tap-time $hold-time C-S-tab M-left)
    c_tab (tap-hold $tap-time $hold-time C-tab M-right)
+   m_tab (tap-hold $tap-time $hold-time M-tab C-A-M-m)
    mc C-up ;; Mission Control
   sls M-spc ;; Spotlight Search
   dtn S-C-A-M-f5 ;; Dictation
@@ -86,8 +84,8 @@
 (deflayer cmd 
   esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX   XX    XX     XX        XX     XX     XX    XX     XX     XX      XX     XX    XX    XX
-  XX   XX    XX     esc       XX     XX     XX    XX    A-bspc  del      XX     XX    XX    XX 
-  XX   M-`   A-s    @c_s_tab   @c_tab  XX     left  down   up     right   ret    XX    XX 
+  XX   XX    M-c     esc      @m_v     XX     XX    XX    A-bspc  del      XX     XX    XX    XX 
+  XX   M-`   @m_tab    @c_s_tab   @c_tab  XX     left  down   up     right   ret    XX    XX 
   XX   XX    XX     XX        XX     XX    XX     XX     XX      XX      XX     XX    XX
   XX   XX   XX XX XX XX 
 )

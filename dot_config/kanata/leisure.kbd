@@ -84,9 +84,9 @@
 (deflayer cmd 
   esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX   XX    XX     XX        XX     XX     XX    XX     XX     XX      XX     XX    XX    XX
-  XX   XX    M-c     esc      @m_v     XX     XX    XX    A-bspc  del      XX     XX    XX    XX 
-  XX   M-`   @m_tab    @c_s_tab   @c_tab  XX     left  down   up     right   ret    XX    XX 
-  XX   XX    XX     XX        XX     XX    XX     XX     XX      XX      XX     XX    XX
+  XX   XX    XX     esc       M-`     XX     XX    XX    A-bspc  del      XX     XX    XX    XX 
+  XX   XX   @m_tab    @c_s_tab   @c_tab  XX     left  down   up     right   ret    XX    XX 
+  XX   XX    M-c        @m_v         XX      XX     XX     XX     XX      XX      XX     XX    XX
   XX   XX   XX XX XX XX 
 )
 

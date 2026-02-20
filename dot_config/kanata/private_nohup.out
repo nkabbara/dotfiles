@@ -1,0 +1,29 @@
+2026-02-20T11:53:35.788519-03:00 INFO kanata-tray [version=0.8.0, commit=Homebrew, build_date=2025-10-09T13:10:36Z] starting
+2026-02-20T11:53:35.788656-03:00 INFO kanata-tray config folder: /Users/nkabbara/.config/kanata/
+2026-02-20T11:53:35.788663-03:00 INFO kanata-tray log folder: /opt/homebrew/Cellar/kanata-tray/0.8.0/bin
+2026-02-20T11:53:35.789092-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/default.ico
+2026-02-20T11:53:35.789153-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/crash.ico
+2026-02-20T11:53:35.789209-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/pause.ico
+2026-02-20T11:53:35.78928-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/live-reload.ico
+2026-02-20T11:53:56.337228-03:00 INFO Running preset 'Leisure Laptop'
+2026-02-20T11:53:56.346121-03:00 INFO Running command: /opt/homebrew/bin/kanata -c /Users/nkabbara/.config/kanata/leisure.kbd --port 5829
+2026-02-20T11:53:56.349391-03:00 INFO Started kanata (pid=88342)
+2026-02-20T11:53:58.852202-03:00 INFO Connected to kanata via TCP (127.0.0.1:56930)
+2026-02-20T11:54:09.923404-03:00 INFO Waiting for all post-start-async hooks to exit
+2026-02-20T11:54:09.923453-03:00 INFO All post-start-async hooks exited
+2026-02-20T11:54:09.923482-03:00 INFO Previous kanata process terminated successfully
+2026-02-20T11:56:30.831923-03:00 INFO Clicked "Exit tray button", exiting.
+2026-02-20T11:56:42.147633-03:00 INFO kanata-tray [version=0.8.0, commit=Homebrew, build_date=2025-10-09T13:10:36Z] starting
+2026-02-20T11:56:42.147751-03:00 INFO kanata-tray config folder: /Users/nkabbara/.config/kanata/
+2026-02-20T11:56:42.147759-03:00 INFO kanata-tray log folder: /opt/homebrew/Cellar/kanata-tray/0.8.0/bin
+2026-02-20T11:56:42.148085-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/default.ico
+2026-02-20T11:56:42.148144-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/crash.ico
+2026-02-20T11:56:42.148205-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/pause.ico
+2026-02-20T11:56:42.148273-03:00 INFO loading status icon: /Users/nkabbara/.config/kanata/status_icons/live-reload.ico
+2026-02-20T11:56:53.454134-03:00 INFO Running preset 'Default Layout'
+2026-02-20T11:56:53.463674-03:00 INFO Running command: /opt/homebrew/bin/kanata -c /Users/nkabbara/.config/kanata/default-layout.kbd --port 5829
+2026-02-20T11:56:53.466252-03:00 INFO Started kanata (pid=88399)
+2026-02-20T11:56:55.969425-03:00 INFO Connected to kanata via TCP (127.0.0.1:56940)
+2026-02-20T11:57:07.479955-03:00 INFO Waiting for all post-start-async hooks to exit
+2026-02-20T11:57:07.48-03:00 INFO All post-start-async hooks exited
+2026-02-20T11:57:07.480029-03:00 INFO Previous kanata process terminated successfully

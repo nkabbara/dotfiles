@@ -17,12 +17,7 @@ autorestart_on_crash = false
 [defaults.layer_icons]
 
 
-[presets.'Leisure Laptop']
+[presets.'Default Layout']
 # kanata_executable = ''
-kanata_config = '/Users/nkabbara/.config/kanata/leisure.kbd'
-# autorun = true
-
-[presets.'Work Laptop']
-# kanata_executable = ''
-kanata_config = '/Users/nkabbara/.config/kanata/work.kbd'
+kanata_config = '/Users/nkabbara/.config/kanata/default-layout.kbd'
 # autorun = true

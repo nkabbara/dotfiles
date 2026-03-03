@@ -8,12 +8,7 @@ return {
   config = function()
     vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>")
 
-    vim.g.opencode_opts = {
-      provider = {
-        enabled = "snacks",
-        snacks = {},
-      },
-    }
+    vim.g.opencode_opts = {}
 
     -- Required for `vim.g.opencode_opts.auto_reload`
     vim.opt.autoread = true

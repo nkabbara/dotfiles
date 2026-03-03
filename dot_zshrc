@@ -26,6 +26,7 @@ export PATH=/Users/nkabbara/.opencode/bin:$PATH
 
 
 # alias
+alias kanata-custom='nohup sudo -E kanata-tray &> /dev/null &'
 alias l='ls -lrthG'
 alias vi='nvim -p'
 alias vim='nvim -p'

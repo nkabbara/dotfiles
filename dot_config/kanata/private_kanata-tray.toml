@@ -7,7 +7,7 @@ control_server_enable = false
 control_server_port = 8100
 
 [defaults]
-tcp_port = 5829
+tcp_port = 5929
 autorestart_on_crash = false
 
 [defaults.hooks]

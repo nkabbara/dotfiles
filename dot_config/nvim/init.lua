@@ -603,6 +603,15 @@ require("lazy").setup({
         -- ts_ls = {},
         --
 
+        ruby_lsp = {
+          mason = false, -- IMPORTANT: Mason can cause ABI issues with Ruby LSP C extensions
+          cmd = { vim.fn.expand("~/.asdf/shims/ruby-lsp") }, -- Adjust path based on your version manager
+          init_options = {
+            formatter = "auto",
+            linters = { "rubocop" },
+          },
+        },
+
         lua_ls = {
           -- cmd = { ... },
           -- filetypes = { ... },
@@ -637,6 +646,8 @@ require("lazy").setup({
         "stylua", -- Used to format Lua code
         "prettierd", -- Used to format JSON/JSONC quickly
         "prettier", -- Fallback formatter for JSON/JSONC
+        -- NOTE: ruby-lsp is NOT managed by Mason due to C extension ABI issues
+        -- Install manually: gem install ruby-lsp
       })
       require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 

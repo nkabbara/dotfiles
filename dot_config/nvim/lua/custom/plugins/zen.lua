@@ -1,20 +1,23 @@
 -- Lua
-return {
-    "folke/zen-mode.nvim",
-    opts = {
-        window = {
-            backdrop = 1,
-            width = 0.50,
-        },
+local settings = {
+  window = {
+    backdrop = 1,
+    width = 0.30,
+  },
+  plugins = {
+    options = {
+      enabled = true,
+      laststatus = 3,
     },
-    config = function()
-        vim.keymap.set("n", "<leader>z", function()
-            require("zen-mode").toggle({
-                window = {
-                    backdrop = 1,
-                    width = 0.40,
-                },
-            })
-        end)
-    end,
+  },
+}
+
+return {
+  "folke/zen-mode.nvim",
+  opts = settings,
+  config = function()
+    vim.keymap.set("n", "<leader>z", function()
+      require("zen-mode").toggle(settings)
+    end)
+  end,
 }

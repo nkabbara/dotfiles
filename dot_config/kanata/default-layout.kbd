@@ -109,8 +109,8 @@ esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    �
 (deflayer num 
 esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX         XX    XX   XX     XX     XX       XX    XX    XX    XX    XX    XX    XX    XX
-  XX         XX    XX   XX     XX     XX       XX    7     8     9     XX     XX    XX    XX
+  XX         XX    XX   XX     XX     XX       XX    7     8     9     0     XX    XX    XX
   XX         XX    XX   XX     XX     XX       XX    4     5     6     .     XX    XX     
-  XX   XX    XX    XX   XX     XX     XX       1     2     3     0    XX    XX
+  XX   XX    XX    XX   XX     XX     XX     lsft    1     2     3     XX    XX
   XX   XX   XX lmet XX XX 
 )

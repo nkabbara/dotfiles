@@ -1,8 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "permission": {
-	  "git push": "ask",
-  }
+    "git push": "ask"
+  },
   "default_agent": "plan",
   "mcp": {
     "chrome-devtools": {

@@ -12,5 +12,6 @@
   },
   "tui": {
     "auto_scroll": false
-  }
+  },
+  "plugin": ["@mohak34/opencode-notifier@latest"]
 }

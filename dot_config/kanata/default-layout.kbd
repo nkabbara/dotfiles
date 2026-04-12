@@ -101,16 +101,16 @@
 (deflayer sys2 
 esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX        XX   XX    XX     XX     XX       XX    XX    XX    XX     XX    XX    XX    XX
-  XX        XX   XX    XX    XX    XX       XX    XX    XX    XX     XX    XX  XX    XX 
-  XX        XX   XX    XX    XX     XX     XX       XX    XX    XX    S-;   ;     XX 
-  XX   XX   XX   XX    XX     XX    XX     XX     XX    XX      XX     XX    XX
+  XX        XX   XX    XX    XX     XX       XX    XX    XX    XX      XX    XX    XX    XX 
+  XX        XX   XX    XX    XX     XX       XX    XX    XX    XX      XX    XX    XX 
+  XX   XX   XX   XX    XX     XX    XX       XX    XX    XX    XX      XX    XX
   XX   XX   XX lmet XX XX 
 )
 (deflayer num 
 esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX         XX    XX   XX     XX     XX       XX    XX    XX    XX    XX    XX    XX    XX
-  XX         XX    XX   XX     XX     XX       XX    7     8     9     XX     XX    XX    XX
-  XX         XX    XX   XX     XX     XX       XX    4     5     6     .     XX    XX     
+  XX         XX    XX   XX     XX     XX       XX    7     8     9     XX    XX    XX    XX
+  XX         XX    XX   XX     XX     XX       XX    4     5     6     S-;   XX    XX     
   XX   XX    XX    XX   XX     XX     XX       1     2     3     0     XX    XX
   XX   XX   XX lmet XX XX 
 )

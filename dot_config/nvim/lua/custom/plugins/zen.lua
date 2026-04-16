@@ -2,7 +2,7 @@
 local settings = {
   window = {
     backdrop = 1,
-    width = 0.30,
+    width = 0.40,
   },
   plugins = {
     options = {

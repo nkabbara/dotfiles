@@ -46,6 +46,8 @@ export PATH=/Users/nkabbara/.opencode/bin:$PATH
 # alias
 alias kanata-custom='nohup sudo -E kanata-tray &> /dev/null &'
 alias l='ls -lrthG'
+alias v='nvim'
+alias va='nvim "+lua vim.schedule(function() require(\"opencode\").start() end)"'
 alias vi='nvim -p'
 alias vim='nvim -p'
 alias b='bundle exec '
@@ -76,4 +78,3 @@ bindkey '^R' history-incremental-search-backward
 if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)"
 fi
-

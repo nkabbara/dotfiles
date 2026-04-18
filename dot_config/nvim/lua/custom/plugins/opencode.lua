@@ -1,7 +1,7 @@
 return {
-  "NickvanDyke/opencode.nvim",
-  -- dir = "/Users/nkabbara/dev/opencode.nvim",
-  -- name = "opencode.nvim",
+  "nkabbara/opencode.nvim",
+  branch = "feature/support-tab-context-upstream",
+  name = "opencode.nvim",
   dependencies = {
     {
       -- `snacks.nvim` integration is recommended, but optional
@@ -30,24 +30,18 @@ return {
     vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>")
 
     local opencode_cmd = "opencode --port"
-    local opencode_workflow = require("custom.opencode.workflow")
+    local workflow = require("custom.workflow")
+    local opencode_workflow = workflow.win_manager
     local opencode_resize_group = vim.api.nvim_create_augroup("custom-opencode-resize", { clear = true })
 
-    local function resize_opencode_win()
-      local win = opencode_workflow.find_opencode_win(opencode_cmd)
-      if win and vim.api.nvim_win_is_valid(win) then
-        local config = vim.api.nvim_win_get_config(win)
-        if config.relative ~= "" then
-          return
-        end
-        vim.api.nvim_win_set_width(win, math.floor(vim.o.columns * 0.5))
-      end
-    end
+    workflow.new_worktree.setup()
 
     vim.api.nvim_create_autocmd("VimResized", {
       group = opencode_resize_group,
       callback = function()
-        vim.schedule(resize_opencode_win)
+        vim.schedule(function()
+          opencode_workflow.resize_layout(opencode_cmd)
+        end)
       end,
     })
 
@@ -88,10 +82,10 @@ return {
       require("opencode").toggle()
     end, { desc = "Toggle embedded" })
     vim.keymap.set("n", "<leader>c", function()
-      opencode_workflow.focus_code_in_zen(opencode_cmd)
-    end, { desc = "Focus code in AI workflow" })
+      opencode_workflow.focus_workspace_win(opencode_cmd)
+    end, { desc = "Focus workspace in AI workflow" })
     vim.keymap.set("n", "<leader>a", function()
-      opencode_workflow.focus_opencode_in_zen(opencode_cmd)
+      opencode_workflow.focus_opencode_win(opencode_cmd)
     end, { desc = "Focus opencode in AI workflow" })
     vim.keymap.set("n", "<leader>ol", function()
       require("opencode").command("session.select")

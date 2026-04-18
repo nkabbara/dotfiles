@@ -3,7 +3,7 @@
   "permission": {
     "git push": "ask"
   },
-  "default_agent": "plan",
+  "default_agent": "build",
   "mcp": {
     "chrome-devtools": {
       "type": "local",

@@ -7,11 +7,25 @@
   "mcp": {
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"]
+      "command": [
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ]
+    },
+    "uidotsh": {
+      "type": "remote",
+      "url": "https://ui.sh/mcp?agent=opencode",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer {env:UIDOTSH_TOKEN}"
+      }
     }
   },
   "tui": {
     "auto_scroll": false
   },
-  "plugin": ["@mohak34/opencode-notifier@latest"]
+  "plugin": [
+    "@mohak34/opencode-notifier@latest"
+  ]
 }

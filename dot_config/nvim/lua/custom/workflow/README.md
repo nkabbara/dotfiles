@@ -1,54 +1,13 @@
-# New Worktree Feature
+# Workflow Commands
 
-The New Worktree feature creates a new git worktree from the current tab's working directory context, opens that worktree in a new Neovim tab, and initializes the same workspace-plus-opencode layout used by the existing workflow. It is intended to make spinning up a focused feature workspace fast, predictable, and consistent from inside Neovim.
+## `:NewWorktree`
 
-## Current Behavior
+Creates a new worktree from the bare `repo.git` that lives inside the project root. The new worktree directory is created as a sibling of `repo.git`, using the feature branch name with `/` flattened to `-` for the directory name.
 
-- Exposes a Neovim user command named `:NewWorktree`.
-- Accepts two arguments:
-  - `feature_name` (required)
-  - `base_branch` (optional, defaults to `main`)
-- Uses the current tab-local working directory as the source context.
-- Creates the new worktree as a sibling directory one level above the current tab-local working directory.
-- Creates a new git branch named from `feature_name` using `git worktree add -b <feature_name> ...`.
-- Uses the provided `base_branch` as the branch to base the worktree on.
-- If the base branch does not exist locally, tries `origin/<base_branch>`.
-- If neither the local base branch nor `origin/<base_branch>` exists, the command fails.
-- Validates `feature_name` conservatively and rejects unsafe or unsupported names.
-- Keeps the git branch name as provided, but uses a flattened filesystem-safe directory name for the worktree path.
-- Fails early if the target sibling directory already exists.
-- On any failure, stops immediately and shows an error message.
-- After successful worktree creation, opens a new Neovim tab.
-- Stores the feature name in a tab variable for future tab-labeling behavior.
-- Sets the new tab's local working directory to the newly created worktree directory.
-- Opens Oil in the workspace window for that new tab.
-- Opens opencode on the right using the same behavior as the existing `<leader>ot` flow.
+If the current tab is at the project root, the command reuses that tab and turns it into the new workspace. If the current tab is already inside a worktree, it opens the new worktree in a fresh tab. In both cases it sets the tab-local directory to the target worktree, opens Oil for that directory, and opens opencode beside it in the normal workflow layout.
 
-## Specs
+## `:OpenWorktree`
 
-- Exposes a Neovim user command named `:NewWorktree`.
-- Accepts two arguments:
-  - `feature_name` (required)
-  - `base_branch` (optional, defaults to `main`)
-- Uses the current tab-local working directory as the source context.
-- Creates the new worktree as a sibling directory one level above the current tab-local working directory.
-- Creates a new git branch named from `feature_name` using `git worktree add -b <feature_name> ...`.
-- Uses the provided `base_branch` as the branch to base the worktree on.
-- If the base branch does not exist locally, tries `origin/<base_branch>`.
-- If neither the local base branch nor `origin/<base_branch>` exists, the command fails.
-- Validates `feature_name` conservatively and rejects unsafe or unsupported names.
-- Keeps the git branch name as provided, but uses a flattened filesystem-safe directory name for the worktree path.
-- Fails early if the target sibling directory already exists.
-- On any failure, stops immediately and shows an error message.
-- After successful worktree creation, opens a new Neovim tab.
-- Stores the feature name in a tab variable for future tab-labeling behavior.
-- Sets the new tab's local working directory to the newly created worktree directory.
-- Opens Oil in the workspace window for that new tab.
-- Opens opencode on the right using the same behavior as the existing `<leader>ot` flow.
+Opens an existing sibling worktree directory that lives next to `repo.git`. It validates that the current directory matches the expected project layout before switching tabs or directories.
 
-## TODO
-
-- Organize worktrees according to the structure described here:
-  - https://www.meziantou.net/git-worktree-managing-multiple-working-directories.htm
-  - Note: first do this manually to understand exactly the structure and how it works before updating the plugin to support it.
-  - The plugin should also verify that the expected structure is in place and fail with an error instead of continuing when it is not.
+If the current tab is at the project root, the command reuses that tab for the selected worktree. If the current tab is already in a worktree, it opens the selected worktree in a new tab. The target tab is then set up the same way as `:NewWorktree`: tab-local directory changed to the worktree, Oil opened for that directory, and opencode opened in the standard side-by-side workflow layout.

@@ -26,7 +26,8 @@ setopt HIST_IGNORE_SPACE
 
 # exports
 export oc=/opt/homebrew/bin/nvim
-export EDITOR=/opt/homebrew/bin/nvim
+export EDITOR="/Users/nkabbara/.local/bin/neovide-editor"
+export VISUAL="$EDITOR"
 export FZF_DEFAULT_COMMAND='rg --files'
 export KANATA_TRAY_CONFIG_DIR="/Users/nkabbara/.config/kanata/"
 export MANPATH=$MANPATH:/opt/local/share/man
@@ -42,12 +43,15 @@ if (( $+commands[go] )); then
 fi
 export PATH=/Users/nkabbara/.opencode/bin:$PATH
 
+# Load secrets from macOS Keychain.
+export UIDOTSH_TOKEN="$(security find-generic-password -a "$USER" -s UIDOTSH_TOKEN -w 2>/dev/null)"
+
 
 # alias
 alias kanata-custom='nohup sudo -E kanata-tray &> /dev/null &'
 alias l='ls -lrthG'
 alias v='nvim'
-alias va='nvim "+lua vim.schedule(function() require(\"opencode\").start() end)"'
+alias va='nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"'
 alias vi='nvim -p'
 alias vim='nvim -p'
 alias b='bundle exec '

@@ -29,37 +29,42 @@ return {
   config = function()
     vim.keymap.set("t", "<Esc><Esc>", "<C-\\><C-n>")
 
-    local opencode_cmd = "opencode --port"
     local workflow = require("custom.workflow")
+    local opencode_runtime = workflow.opencode
     local opencode_workflow = workflow.win_manager
     local opencode_resize_group = vim.api.nvim_create_augroup("custom-opencode-resize", { clear = true })
 
-    workflow.new_worktree.setup()
+    workflow.worktree.setup()
 
     vim.api.nvim_create_autocmd("VimResized", {
       group = opencode_resize_group,
       callback = function()
         vim.schedule(function()
-          opencode_workflow.resize_layout(opencode_cmd)
+          opencode_workflow.resize_layout()
         end)
       end,
     })
 
     vim.g.opencode_opts = {
       server = {
+        port = function(callback)
+          callback(opencode_runtime.get_tab_port())
+        end,
         start = function()
-          require("opencode.terminal").open(opencode_cmd, {
+          require("opencode.terminal").open(opencode_runtime.command_for_tab(), {
             split = "right",
             width = math.floor(vim.o.columns * 0.5),
           })
         end,
         toggle = function()
-          require("opencode.terminal").toggle(opencode_cmd, {
+          opencode_workflow.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())
+          require("opencode.terminal").toggle(opencode_runtime.command_for_tab(), {
             split = "right",
             width = math.floor(vim.o.columns * 0.5),
           })
         end,
         stop = function()
+          opencode_workflow.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())
           require("opencode.terminal").close()
         end,
       },
@@ -82,10 +87,10 @@ return {
       require("opencode").toggle()
     end, { desc = "Toggle embedded" })
     vim.keymap.set("n", "<leader>c", function()
-      opencode_workflow.focus_workspace_win(opencode_cmd)
+      opencode_workflow.focus_workspace_win()
     end, { desc = "Focus workspace in AI workflow" })
     vim.keymap.set("n", "<leader>a", function()
-      opencode_workflow.focus_opencode_win(opencode_cmd)
+      opencode_workflow.focus_opencode_win()
     end, { desc = "Focus opencode in AI workflow" })
     vim.keymap.set("n", "<leader>ol", function()
       require("opencode").command("session.select")

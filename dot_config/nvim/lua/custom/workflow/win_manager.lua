@@ -9,8 +9,22 @@
 -- - focus_opencode_win: focuses the opencode side of the workflow.
 
 local M = {}
+local opencode_runtime = require("custom.workflow.opencode")
 
 local WORKFLOW_WIDTH = 0.40
+local OPENCODE_NORMAL_BORDER_HL = "OpencodeNormalModeBorder"
+local OPENCODE_NORMAL_BORDER_COLOR = "#4f8680"
+local FOCUS_FLOAT_BORDER = { "", "", "", { " ", "NormalFloat" }, "", "", "", { " ", "NormalFloat" } }
+local OPENCODE_NORMAL_FLOAT_BORDER = {
+  "",
+  "",
+  "",
+  { " ", OPENCODE_NORMAL_BORDER_HL },
+  "",
+  "",
+  "",
+  { " ", OPENCODE_NORMAL_BORDER_HL },
+}
 local tab_states = {}
 
 local function current_tab()
@@ -31,6 +45,7 @@ local function get_state(tab)
       last_workspace_buf = nil,
       workspace_focus_win = nil,
       workspace_focus_parent_win = nil,
+      workspace_focus_autocmd = nil,
     }
   end
   return tab_states[key], tab
@@ -39,6 +54,40 @@ end
 local function is_float(win)
   local config = vim.api.nvim_win_get_config(win)
   return config.relative ~= ""
+end
+
+local function is_last_normal_win(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return false
+  end
+
+  if is_float(win) then
+    return false
+  end
+
+  local normal_win_count = 0
+  local tab = vim.api.nvim_win_get_tabpage(win)
+  for _, tab_win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+    if not is_float(tab_win) then
+      normal_win_count = normal_win_count + 1
+      if normal_win_count > 1 then
+        return false
+      end
+    end
+  end
+
+  return normal_win_count == 1
+end
+
+local function ensure_closeable_win(win)
+  if not is_last_normal_win(win) then
+    return
+  end
+
+  -- `opencode.terminal` hides/closes windows, and Neovim rejects that for the last normal window.
+  vim.api.nvim_win_call(win, function()
+    vim.cmd.vnew()
+  end)
 end
 
 local function is_normal_file_buf(buf)
@@ -101,13 +150,46 @@ local function centered_float_opts()
   return {
     relative = "editor",
     style = "minimal",
-    border = "none",
+    border = FOCUS_FLOAT_BORDER,
     width = width,
     height = total_height,
     col = math.floor((vim.o.columns - width) / 2),
     row = 0,
     zindex = 60,
   }
+end
+
+local function apply_focus_float_style(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  pcall(vim.api.nvim_set_option_value, "winhl", "", { win = win })
+end
+
+local function apply_opencode_normal_float_style(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  vim.api.nvim_set_hl(0, OPENCODE_NORMAL_BORDER_HL, {
+    bg = OPENCODE_NORMAL_BORDER_COLOR,
+    fg = OPENCODE_NORMAL_BORDER_COLOR,
+  })
+end
+
+local function set_focus_float_border(win, border)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  local cfg = vim.api.nvim_win_get_config(win)
+  if cfg.relative == "" then
+    return
+  end
+
+  cfg.border = border
+  pcall(vim.api.nvim_win_set_config, win, cfg)
 end
 
 local function split_opts()
@@ -119,6 +201,61 @@ end
 
 local function is_workspace_focus_open(state)
   return state.workspace_focus_win and vim.api.nvim_win_is_valid(state.workspace_focus_win)
+end
+
+local function delete_workspace_focus_autocmd(state)
+  if state.workspace_focus_autocmd then
+    pcall(vim.api.nvim_del_autocmd, state.workspace_focus_autocmd)
+    state.workspace_focus_autocmd = nil
+  end
+end
+
+local function sync_workspace_focus_to_parent(state)
+  if not (is_workspace_focus_open(state) and state.workspace_focus_parent_win) then
+    return
+  end
+  if not vim.api.nvim_win_is_valid(state.workspace_focus_parent_win) then
+    return
+  end
+
+  local buf = vim.api.nvim_win_get_buf(state.workspace_focus_win)
+  if not is_normal_file_buf(buf) then
+    return
+  end
+
+  local ok = true
+  if vim.api.nvim_win_get_buf(state.workspace_focus_parent_win) ~= buf then
+    ok = pcall(vim.api.nvim_win_set_buf, state.workspace_focus_parent_win, buf)
+  end
+  if not ok then
+    return
+  end
+
+  state.last_workspace_buf = buf
+  pcall(
+    vim.api.nvim_win_set_cursor,
+    state.workspace_focus_parent_win,
+    vim.api.nvim_win_get_cursor(state.workspace_focus_win)
+  )
+end
+
+local function setup_workspace_focus_sync(state)
+  delete_workspace_focus_autocmd(state)
+
+  state.workspace_focus_autocmd = vim.api.nvim_create_autocmd("BufEnter", {
+    desc = "Sync focused workspace buffer into its parent window",
+    callback = function()
+      if not is_workspace_focus_open(state) then
+        state.workspace_focus_autocmd = nil
+        return true
+      end
+      if vim.api.nvim_get_current_win() ~= state.workspace_focus_win then
+        return
+      end
+
+      sync_workspace_focus_to_parent(state)
+    end,
+  })
 end
 
 local function apply_opencode_window_style(win)
@@ -145,6 +282,30 @@ local function apply_opencode_window_style(win)
   end
 end
 
+function M.apply_workspace_window_style(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  local win_opts = {
+    number = vim.go.number,
+    relativenumber = vim.go.relativenumber,
+    signcolumn = vim.go.signcolumn,
+    foldcolumn = vim.go.foldcolumn,
+    statuscolumn = vim.go.statuscolumn,
+    list = vim.go.list,
+    cursorline = vim.go.cursorline,
+    cursorcolumn = vim.go.cursorcolumn,
+    colorcolumn = vim.go.colorcolumn,
+    wrap = vim.go.wrap,
+    sidescrolloff = vim.go.sidescrolloff,
+  }
+
+  for name, value in pairs(win_opts) do
+    pcall(vim.api.nvim_set_option_value, name, value, { win = win })
+  end
+end
+
 local function close_backdrop(state)
   if state.backdrop_win and vim.api.nvim_win_is_valid(state.backdrop_win) then
     vim.api.nvim_win_close(state.backdrop_win, true)
@@ -162,14 +323,20 @@ local function close_workspace_focus(state, opts)
 
   if is_workspace_focus_open(state) then
     if opts.remember then
+      sync_workspace_focus_to_parent(state)
       remember_workspace_buf_from_win(state, state.workspace_focus_win)
     end
     vim.api.nvim_win_close(state.workspace_focus_win, true)
   end
 
+  delete_workspace_focus_autocmd(state)
   state.workspace_focus_win = nil
 
-  if opts.restore_parent and state.workspace_focus_parent_win and vim.api.nvim_win_is_valid(state.workspace_focus_parent_win) then
+  if
+    opts.restore_parent
+    and state.workspace_focus_parent_win
+    and vim.api.nvim_win_is_valid(state.workspace_focus_parent_win)
+  then
     vim.api.nvim_set_current_win(state.workspace_focus_parent_win)
   end
 
@@ -241,6 +408,52 @@ function M.find_opencode_win(opencode_cmd, tab)
   end
 end
 
+local function is_terminal_normal_mode()
+  local mode = vim.api.nvim_get_mode().mode
+  return mode == "n" or mode == "nt"
+end
+
+local function sync_opencode_focus_border(opencode_cmd, tab)
+  tab = tab or current_tab()
+  if not (tab and vim.api.nvim_tabpage_is_valid(tab)) then
+    return
+  end
+
+  local win = M.find_opencode_win(opencode_cmd, tab)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  local cfg = vim.api.nvim_win_get_config(win)
+  if cfg.relative == "" then
+    return
+  end
+
+  apply_focus_float_style(win)
+
+  set_focus_float_border(win, FOCUS_FLOAT_BORDER)
+
+  if vim.api.nvim_get_current_win() == win and is_terminal_normal_mode() then
+    apply_opencode_normal_float_style(win)
+    set_focus_float_border(win, OPENCODE_NORMAL_FLOAT_BORDER)
+  end
+end
+
+function M.ensure_opencode_win_closeable(opencode_cmd, tab)
+  local win = M.find_opencode_win(opencode_cmd, tab)
+  if win then
+    ensure_closeable_win(win)
+  end
+end
+
+local function resolve_opencode_cmd(tab, opencode_cmd)
+  if opencode_cmd and opencode_cmd ~= "" then
+    return opencode_cmd
+  end
+
+  return opencode_runtime.command_for_tab(tab)
+end
+
 local function is_opencode_float_open(opencode_cmd, tab)
   local win = M.find_opencode_win(opencode_cmd, tab)
   if not (win and vim.api.nvim_win_is_valid(win)) then
@@ -271,11 +484,14 @@ local function open_workspace_focus_in_win(state, win)
   local cursor = vim.api.nvim_win_get_cursor(win)
   state.workspace_focus_parent_win = win
   state.workspace_focus_win = vim.api.nvim_open_win(buf, true, centered_float_opts())
+  apply_focus_float_style(state.workspace_focus_win)
   pcall(vim.api.nvim_win_set_cursor, state.workspace_focus_win, cursor)
+  setup_workspace_focus_sync(state)
 end
 
 function M.resize_layout(opencode_cmd)
   local state, tab = get_state()
+  opencode_cmd = resolve_opencode_cmd(tab, opencode_cmd)
 
   if is_workspace_focus_open(state) then
     pcall(vim.api.nvim_win_set_config, state.workspace_focus_win, centered_float_opts())
@@ -286,6 +502,7 @@ function M.resize_layout(opencode_cmd)
     local cfg = vim.api.nvim_win_get_config(opencode_win)
     if cfg.relative ~= "" then
       pcall(vim.api.nvim_win_set_config, opencode_win, centered_float_opts())
+      sync_opencode_focus_border(opencode_cmd, tab)
     else
       pcall(vim.api.nvim_win_set_width, opencode_win, math.floor(vim.o.columns * 0.5))
     end
@@ -325,6 +542,7 @@ end
 
 function M.focus_workspace_win(opencode_cmd)
   local state, tab = get_state()
+  opencode_cmd = resolve_opencode_cmd(tab, opencode_cmd)
 
   if is_workspace_focus_open(state) then
     close_workspace_focus(state, { restore_parent = true, remember = true })
@@ -367,6 +585,7 @@ end
 
 function M.focus_opencode_win(opencode_cmd)
   local state, tab = get_state()
+  opencode_cmd = resolve_opencode_cmd(tab, opencode_cmd)
   local return_focus_to_workspace = false
 
   -- Show backdrop first to mask intermediate layout transitions and reduce flicker.
@@ -385,6 +604,7 @@ function M.focus_opencode_win(opencode_cmd)
     local config = vim.api.nvim_win_get_config(existing_win)
     if config.relative == "" then
       -- Preserve the same session: hide and re-show in float mode.
+      ensure_closeable_win(existing_win)
       require("opencode.terminal").toggle(opencode_cmd, float_opts)
       require("opencode.terminal").toggle(opencode_cmd, float_opts)
     else
@@ -415,6 +635,7 @@ function M.focus_opencode_win(opencode_cmd)
 
     local cfg = vim.api.nvim_win_get_config(opencode_win)
     if cfg.relative ~= "" then
+      sync_opencode_focus_border(opencode_cmd, tab)
       ensure_backdrop(state)
     else
       close_backdrop(state)
@@ -435,5 +656,15 @@ function M.focus_opencode_win(opencode_cmd)
     end
   end, 120)
 end
+
+local opencode_focus_border_group = vim.api.nvim_create_augroup("custom-opencode-focus-border", { clear = true })
+
+vim.api.nvim_create_autocmd({ "ModeChanged", "TermEnter", "TermLeave", "WinEnter", "WinLeave", "BufEnter" }, {
+  group = opencode_focus_border_group,
+  desc = "Update opencode focus border for terminal normal mode",
+  callback = function()
+    vim.schedule(sync_opencode_focus_border)
+  end,
+})
 
 return M

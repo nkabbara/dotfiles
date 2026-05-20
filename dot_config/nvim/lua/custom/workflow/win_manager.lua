@@ -26,6 +26,19 @@ local OPENCODE_NORMAL_FLOAT_BORDER = {
   { " ", OPENCODE_NORMAL_BORDER_HL },
 }
 local tab_states = {}
+local WORKSPACE_WIN_OPTS = {
+  number = vim.o.number,
+  relativenumber = vim.o.relativenumber,
+  signcolumn = vim.o.signcolumn,
+  foldcolumn = vim.o.foldcolumn,
+  statuscolumn = vim.o.statuscolumn,
+  list = vim.o.list,
+  cursorline = vim.o.cursorline,
+  cursorcolumn = vim.o.cursorcolumn,
+  colorcolumn = vim.o.colorcolumn,
+  wrap = vim.o.wrap,
+  sidescrolloff = vim.o.sidescrolloff,
+}
 
 local function current_tab()
   return vim.api.nvim_get_current_tabpage()
@@ -287,21 +300,7 @@ function M.apply_workspace_window_style(win)
     return
   end
 
-  local win_opts = {
-    number = vim.go.number,
-    relativenumber = vim.go.relativenumber,
-    signcolumn = vim.go.signcolumn,
-    foldcolumn = vim.go.foldcolumn,
-    statuscolumn = vim.go.statuscolumn,
-    list = vim.go.list,
-    cursorline = vim.go.cursorline,
-    cursorcolumn = vim.go.cursorcolumn,
-    colorcolumn = vim.go.colorcolumn,
-    wrap = vim.go.wrap,
-    sidescrolloff = vim.go.sidescrolloff,
-  }
-
-  for name, value in pairs(win_opts) do
+  for name, value in pairs(WORKSPACE_WIN_OPTS) do
     pcall(vim.api.nvim_set_option_value, name, value, { win = win })
   end
 end
@@ -485,6 +484,7 @@ local function open_workspace_focus_in_win(state, win)
   state.workspace_focus_parent_win = win
   state.workspace_focus_win = vim.api.nvim_open_win(buf, true, centered_float_opts())
   apply_focus_float_style(state.workspace_focus_win)
+  M.apply_workspace_window_style(state.workspace_focus_win)
   pcall(vim.api.nvim_win_set_cursor, state.workspace_focus_win, cursor)
   setup_workspace_focus_sync(state)
 end

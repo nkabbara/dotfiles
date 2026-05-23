@@ -1,0 +1,11 @@
+Host ssh.hamurabi.work                                                         
+	HostName ssh.hamurabi.work                                                   
+	User root                                                                    
+	IdentityFile ~/.ssh/hamurabi                                                 
+	IdentitiesOnly yes                                                           
+	IdentityAgent none                                                           
+	AddKeysToAgent no                                                            
+
+
+Host *
+	IdentityAgent "~/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"

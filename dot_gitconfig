@@ -1,0 +1,47 @@
+# This is Git's per-user configuration file.
+[user]
+# Please adapt and uncomment the following lines:
+name = Nash Kabbara
+email = nash@kabbara.us
+[alias]
+  br = branch
+  lg = log -5
+  lgo = log --oneline -5
+  co = checkout
+  ct = commit
+  ctm = commit -m
+  ad = add
+  st = status
+  ph = push
+  phu = push -u
+  pl = pull
+  df = diff
+  dfn = diff --name-only
+  mg = merge
+  rb = rebase
+  sw = switch
+  swc = switch -c
+  acp = "!f() { git add -A && git commit -m \"$@\" && git push; }; f"
+[push]
+	followTags = true
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+[core]
+  editor=vim
+	excludesfile = /Users/nkabbara/.gitignore_global
+	pager = cat
+[github]
+	user = nkabbara
+[pull]
+	rebase = true
+[fetch]
+	prune = true
+[diff]
+	colorMoved = zebra
+[init]
+	defaultBranch = main
+[commit]
+	gpgSign = false

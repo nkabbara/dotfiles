@@ -643,7 +643,12 @@ require("lazy").setup({
       --
       -- You can add other tools here that you want Mason to install
       -- for you, so that they are available from within Neovim.
-      local ensure_installed = vim.tbl_keys(servers or {})
+      local ensure_installed = {}
+      for server_name, server in pairs(servers or {}) do
+        if server.mason ~= false then
+          table.insert(ensure_installed, server_name)
+        end
+      end
       vim.list_extend(ensure_installed, {
         "stylua", -- Used to format Lua code
         "prettierd", -- Used to format JSON/JSONC quickly
@@ -935,6 +940,9 @@ require("lazy").setup({
   -- In normal mode type `<space>sh` then write `lazy.nvim-plugin`
   -- you can continue same window with `<space>sr` which resumes last telescope search
 }, {
+  rocks = {
+    enabled = false,
+  },
   ui = {
     -- If you are using a Nerd Font: set icons to an empty table which will use the
     -- default lazy.nvim defined Nerd Font icons, otherwise define a unicode icons table

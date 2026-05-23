@@ -1,0 +1,39 @@
+#!/bin/sh
+set -eu
+
+if ! command -v brew >/dev/null 2>&1; then
+  echo "Homebrew is not installed; skipping Homebrew package bootstrap." >&2
+  exit 0
+fi
+
+install_formula_if_missing() {
+  formula="$1"
+  if ! brew list --formula "$formula" >/dev/null 2>&1; then
+    brew install "$formula"
+  fi
+}
+
+install_cask_if_missing() {
+  cask="$1"
+  if ! brew list --cask "$cask" >/dev/null 2>&1; then
+    brew install --cask "$cask"
+  fi
+}
+
+for formula in \
+  neovim \
+  tree-sitter-cli \
+  node \
+  ripgrep \
+  fd \
+  opencode
+do
+  install_formula_if_missing "$formula"
+done
+
+for cask in \
+  alt-tab \
+  handy
+do
+  install_cask_if_missing "$cask"
+done

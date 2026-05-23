@@ -29,7 +29,6 @@ export oc=/opt/homebrew/bin/nvim
 export EDITOR="/Users/nkabbara/.local/bin/neovide-editor"
 export VISUAL="$EDITOR"
 export FZF_DEFAULT_COMMAND='rg --files'
-export KANATA_TRAY_CONFIG_DIR="/Users/nkabbara/.config/kanata/"
 export MANPATH=$MANPATH:/opt/local/share/man
 export INFOPATH=$INFOPATH:/opt/local/share/info
 export PATH=/opt/local/bin:/opt/local/sbin:/usr/local/bin/node:$PATH
@@ -48,7 +47,6 @@ export UIDOTSH_TOKEN="$(security find-generic-password -a "$USER" -s UIDOTSH_TOK
 
 
 # alias
-alias kanata-custom='nohup sudo -E kanata-tray &> /dev/null &'
 alias l='ls -lrthG'
 alias v='nvim'
 alias va='nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"'

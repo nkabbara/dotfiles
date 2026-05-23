@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+label="com.nkabbara.kanata"
+src="{{ .chezmoi.homeDir }}/.config/kanata/${label}.plist"
+dst="/Library/LaunchDaemons/${label}.plist"
+
+if [ ! -x /opt/homebrew/bin/kanata ]; then
+  echo "kanata is not installed at /opt/homebrew/bin/kanata; skipping ${label}"
+  exit 0
+fi
+
+if [ ! -f "$src" ]; then
+  echo "missing ${src}; run chezmoi apply again after the plist is created"
+  exit 1
+fi
+
+sudo install -o root -g wheel -m 0644 "$src" "$dst"
+
+if sudo launchctl print "system/${label}" >/dev/null 2>&1; then
+  sudo launchctl bootout "system/${label}" >/dev/null 2>&1 || true
+fi
+
+sudo launchctl bootstrap system "$dst"
+sudo launchctl kickstart -k "system/${label}"

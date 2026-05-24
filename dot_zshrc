@@ -42,32 +42,59 @@ if (( $+commands[go] )); then
 fi
 export PATH=/Users/nkabbara/.opencode/bin:$PATH
 
-# Load secrets from macOS Keychain.
-export UIDOTSH_TOKEN="$(security find-generic-password -a "$USER" -s UIDOTSH_TOKEN -w 2>/dev/null)"
-
 
 # alias
 alias l='ls -lrthG'
 alias v='nvim'
-alias va='nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"'
 alias vi='nvim -p'
 alias vim='nvim -p'
 alias b='bundle exec '
 alias gist='gh gist create '
 alias g='git'
 alias sudo='sudo --preserve-env=PATH'
-alias oc='opencode'
 alias cm='chezmoi'
 
 
 # functions
+function uidotsh_token () {
+   op read "op://Personal/ui.sh/password" 2>/dev/null
+}
+
+function opencode () {
+   local token
+   token="$(uidotsh_token)" || {
+      echo "Could not read ui.sh token from 1Password. Run: op signin" >&2
+      return 1
+   }
+
+   UIDOTSH_TOKEN="$token" command opencode "$@"
+}
+
+function oc () {
+   opencode "$@"
+}
+
+function va () {
+   local token
+   token="$(uidotsh_token)" || {
+      echo "Could not read ui.sh token from 1Password. Run: op signin" >&2
+      return 1
+   }
+
+   UIDOTSH_TOKEN="$token" nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"
+}
+
 function cdg () {
    cdargs -f ~/.cdargs "$1" && cd "`cat "$HOME/.cdargsresult"`" ;
 }
 
 # source
 [ -f /opt/homebrew/opt/asdf/libexec/asdf.sh ] && source /opt/homebrew/opt/asdf/libexec/asdf.sh
-[ -f ~/powerlevel10k/powerlevel10k.zsh-theme ] && source ~/powerlevel10k/powerlevel10k.zsh-theme
+if [[ -f /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme ]]; then
+   source /opt/homebrew/share/powerlevel10k/powerlevel10k.zsh-theme
+elif [[ -f ~/powerlevel10k/powerlevel10k.zsh-theme ]]; then
+   source ~/powerlevel10k/powerlevel10k.zsh-theme
+fi
 
 # other
 set -o vi

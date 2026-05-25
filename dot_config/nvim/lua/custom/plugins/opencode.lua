@@ -47,8 +47,9 @@ return {
 
     vim.g.opencode_opts = {
       server = {
-        port = function(callback)
-          callback(opencode_runtime.get_tab_port())
+        url = function(callback)
+          local port = opencode_runtime.get_tab_port()
+          callback(port and ("http://localhost:" .. port) or nil)
         end,
         start = function()
           require("opencode.terminal").open(opencode_runtime.command_for_tab(), {

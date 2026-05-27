@@ -34,8 +34,6 @@ return {
     local opencode_workflow = workflow.win_manager
     local opencode_resize_group = vim.api.nvim_create_augroup("custom-opencode-resize", { clear = true })
 
-    workflow.worktree.setup()
-
     vim.api.nvim_create_autocmd("VimResized", {
       group = opencode_resize_group,
       callback = function()

@@ -11,21 +11,43 @@
 local M = {}
 local opencode_runtime = require("custom.workflow.opencode")
 
-local WORKFLOW_WIDTH = 0.40
+local WORKFLOW_WIDTH = 0.45
 local FOCUS_FLOAT_ZINDEX = 45
 local BACKDROP_ZINDEX = 40
 local OPENCODE_NORMAL_BORDER_HL = "OpencodeNormalModeBorder"
 local OPENCODE_NORMAL_BORDER_COLOR = "#4f8680"
-local FOCUS_FLOAT_BORDER = { "", "", "", { " ", "NormalFloat" }, "", "", "", { " ", "NormalFloat" } }
+local WORKSPACE_FOCUS_BORDER_HL = "WorkspaceFocusModeBorder"
+local WORKSPACE_FOCUS_BORDER_COLOR = "#6c7086"
+local FOCUS_FLOAT_BORDER = { "", "", "", { "▐", WORKSPACE_FOCUS_BORDER_HL }, "", "", "", { "▌", WORKSPACE_FOCUS_BORDER_HL } }
 local OPENCODE_NORMAL_FLOAT_BORDER = {
   "",
   "",
   "",
-  { " ", OPENCODE_NORMAL_BORDER_HL },
+  { "▐", OPENCODE_NORMAL_BORDER_HL },
   "",
   "",
   "",
-  { " ", OPENCODE_NORMAL_BORDER_HL },
+  { "▌", OPENCODE_NORMAL_BORDER_HL },
+}
+local WORKSPACE_FOCUS_FLOAT_BORDER = {
+  "",
+  "",
+  "",
+  { "▐", WORKSPACE_FOCUS_BORDER_HL },
+  "",
+  "",
+  "",
+  { "▌", WORKSPACE_FOCUS_BORDER_HL },
+}
+local WORKSPACE_NORMAL_FLOAT_BORDER = {
+  "",
+  "",
+  "",
+  { "▐", OPENCODE_NORMAL_BORDER_HL },
+  "",
+  "",
+  "",
+  { "▌", OPENCODE_NORMAL_BORDER_HL },
 }
 local tab_states = {}
 local previous_workflow_laststatus = nil
@@ -220,8 +242,17 @@ local function apply_opencode_normal_float_style(win)
   end
 
   vim.api.nvim_set_hl(0, OPENCODE_NORMAL_BORDER_HL, {
-    bg = OPENCODE_NORMAL_BORDER_COLOR,
     fg = OPENCODE_NORMAL_BORDER_COLOR,
+  })
+end
+
+local function apply_workspace_focus_float_style(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+
+  vim.api.nvim_set_hl(0, WORKSPACE_FOCUS_BORDER_HL, {
+    fg = WORKSPACE_FOCUS_BORDER_COLOR,
   })
 end
 
@@ -441,6 +472,26 @@ local function is_terminal_normal_mode()
   return mode == "n" or mode == "nt"
 end
 
+local function is_workspace_normal_mode()
+  return vim.api.nvim_get_mode().mode:sub(1, 1) == "n"
+end
+
+local function sync_workspace_focus_border()
+  for _, state in pairs(tab_states) do
+    if is_workspace_focus_open(state) then
+      local win = state.workspace_focus_win
+      apply_focus_float_style(win)
+      apply_workspace_focus_float_style(win)
+      set_focus_float_border(win, WORKSPACE_FOCUS_FLOAT_BORDER)
+
+      if vim.api.nvim_get_current_win() == win and is_workspace_normal_mode() then
+        apply_opencode_normal_float_style(win)
+        set_focus_float_border(win, WORKSPACE_NORMAL_FLOAT_BORDER)
+      end
+    end
+  end
+end
+
 local function sync_opencode_focus_border(opencode_cmd, tab)
   tab = tab or current_tab()
   if not (tab and vim.api.nvim_tabpage_is_valid(tab)) then
@@ -458,6 +509,7 @@ local function sync_opencode_focus_border(opencode_cmd, tab)
   end
 
   apply_focus_float_style(win)
+  apply_workspace_focus_float_style(win)
 
   set_focus_float_border(win, FOCUS_FLOAT_BORDER)
 
@@ -554,6 +606,7 @@ local function open_workspace_focus_in_win(state, win)
   state.workspace_focus_win = vim.api.nvim_open_win(buf, true, centered_float_opts())
   apply_focus_float_style(state.workspace_focus_win)
   M.apply_workspace_window_style(state.workspace_focus_win)
+  sync_workspace_focus_border()
   pcall(vim.api.nvim_win_set_cursor, state.workspace_focus_win, cursor)
   setup_workspace_focus_sync(state)
 end
@@ -564,6 +617,7 @@ function M.resize_layout(opencode_cmd)
 
   if is_workspace_focus_open(state) then
     pcall(vim.api.nvim_win_set_config, state.workspace_focus_win, centered_float_opts())
+    sync_workspace_focus_border()
   end
 
   local opencode_win = M.find_opencode_win(opencode_cmd, tab)
@@ -749,9 +803,12 @@ local opencode_focus_border_group = vim.api.nvim_create_augroup("custom-opencode
 
 vim.api.nvim_create_autocmd({ "ModeChanged", "TermEnter", "TermLeave", "WinEnter", "WinLeave", "BufEnter" }, {
   group = opencode_focus_border_group,
-  desc = "Update opencode focus border for terminal normal mode",
+  desc = "Update workflow focus borders for current mode",
   callback = function()
-    vim.schedule(sync_opencode_focus_border)
+    vim.schedule(function()
+      sync_workspace_focus_border()
+      sync_opencode_focus_border()
+    end)
   end,
 })
 

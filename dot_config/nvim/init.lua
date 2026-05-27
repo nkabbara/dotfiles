@@ -853,6 +853,24 @@ require("lazy").setup({
         return tostring(text or ""):gsub("%%", "%%%%")
       end
 
+      local default_section_git = statusline.section_git
+
+      ---@diagnostic disable-next-line: duplicate-set-field
+      statusline.section_git = function(args)
+        local git = default_section_git(args)
+        if git ~= "" or vim.bo.filetype ~= "oil" or statusline.is_truncated((args or {}).trunc_width) then
+          return git
+        end
+
+        local branch = vim.t.workspace_name
+        if type(branch) ~= "string" or branch == "" then
+          return ""
+        end
+
+        local icon = vim.g.have_nerd_font and "" or "Git"
+        return escape_statusline_text(icon .. " " .. branch)
+      end
+
       ---@diagnostic disable-next-line: duplicate-set-field
       statusline.section_filename = function(args)
         local buf = vim.api.nvim_get_current_buf()

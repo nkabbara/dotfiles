@@ -7,6 +7,22 @@ local BARE_REPO_DIRNAME = "repo.git"
 local WORKSPACE_STYLE_GROUP = "custom-worktree-workspace-style"
 local TABLINE_GROUP = "custom-worktree-tabline"
 local TABLINE_GLOBAL = "custom_worktree_tabline"
+local DEFAULT_CONFIG = {
+  copy_files = {
+    enabled = false,
+    source_branch = DEFAULT_BASE_BRANCH,
+    paths = {},
+    overwrite = true,
+  },
+  delete_workspace = {
+    merged_into = "origin/main",
+    fetch_remote = "origin",
+    force_remove = true,
+    protected_branches = { "main", "master" },
+  },
+}
+local config = vim.deepcopy(DEFAULT_CONFIG)
+local redraw_tabline
 
 local function notify(message, level)
   vim.notify(message, level or vim.log.levels.INFO, { title = "workflow" })
@@ -26,6 +42,15 @@ end
 local function run_git(args, cwd)
   local result = vim.system(vim.list_extend({ "git" }, args), { cwd = cwd, text = true }):wait()
   return result.code == 0, result
+end
+
+local function setup_config(opts)
+  local next_config = vim.tbl_deep_extend("force", vim.deepcopy(DEFAULT_CONFIG), opts or {})
+  if opts and opts.copy_files and opts.copy_files.paths ~= nil and opts.copy_files.enabled == nil then
+    next_config.copy_files.enabled = true
+  end
+
+  config = next_config
 end
 
 local function path_type(path)
@@ -169,10 +194,356 @@ local function resolve_base_ref(bare_repo_dir, base_branch)
   return nil
 end
 
-local function parse_new_worktree_args(opts)
+local function resolve_git_ref(bare_repo_dir, ref_name)
+  if type(ref_name) ~= "string" or ref_name == "" then
+    return nil
+  end
+
+  local direct_ok = run_git({ "rev-parse", "--verify", ref_name .. "^{tree}" }, bare_repo_dir)
+  if direct_ok then
+    return ref_name
+  end
+
+  return resolve_base_ref(bare_repo_dir, ref_name)
+end
+
+local function is_safe_relative_path(path)
+  if type(path) ~= "string" or path == "" then
+    return false
+  end
+  if path:sub(1, 1) == "/" or path:match("^%a:[/\\]") then
+    return false
+  end
+
+  for segment in path:gmatch("[^/\\]+") do
+    if segment == ".." then
+      return false
+    end
+  end
+
+  return true
+end
+
+local function branch_matches_ref(branch_ref, branch_name)
+  return branch_ref == branch_name
+    or branch_ref == "refs/heads/" .. branch_name
+    or branch_ref == "refs/remotes/" .. branch_name
+end
+
+local function source_worktree_for_branch(root_dir, bare_repo_dir, source_branch)
+  local ok, result = run_git({ "worktree", "list", "--porcelain" }, bare_repo_dir)
+  if ok then
+    local worktree_dir = nil
+    for line in (result.stdout .. "\n"):gmatch("(.-)\n") do
+      if line == "" then
+        worktree_dir = nil
+      else
+        worktree_dir = line:match("^worktree%s+(.+)$") or worktree_dir
+        local branch_ref = line:match("^branch%s+(.+)$")
+        if worktree_dir and branch_ref and branch_matches_ref(branch_ref, source_branch) then
+          return vim.fs.normalize(worktree_dir)
+        end
+      end
+    end
+  end
+
+  local candidate_dir = vim.fs.joinpath(root_dir, flatten_feature_name(source_branch))
+  if is_directory(candidate_dir) then
+    return candidate_dir
+  end
+end
+
+local function ensure_parent_dir(path)
+  local parent = vim.fs.dirname(path)
+  if parent and parent ~= path then
+    vim.fn.mkdir(parent, "p")
+  end
+end
+
+local function copy_file_from_worktree(source_worktree, destination_dir, relative_path, overwrite)
+  if not source_worktree then
+    return false, "no source worktree"
+  end
+
+  local source_path = vim.fs.joinpath(source_worktree, relative_path)
+  local destination_path = vim.fs.joinpath(destination_dir, relative_path)
+  local source_stat = vim.uv.fs_stat(source_path)
+  if not source_stat then
+    return false, "not found in source worktree"
+  end
+  if source_stat.type ~= "file" then
+    return false, "source path is not a file"
+  end
+  if not overwrite and vim.uv.fs_stat(destination_path) then
+    return true
+  end
+
+  ensure_parent_dir(destination_path)
+  local ok, err = vim.uv.fs_copyfile(source_path, destination_path)
+  if not ok then
+    return false, err or "copy failed"
+  end
+
+  return true
+end
+
+local function restore_file_from_ref(source_ref, destination_dir, relative_path, overwrite)
+  local destination_path = vim.fs.joinpath(destination_dir, relative_path)
+  if not overwrite and vim.uv.fs_stat(destination_path) then
+    return true
+  end
+
+  ensure_parent_dir(destination_path)
+  local ok, result = run_git({ "restore", "--source", source_ref, "--worktree", "--", relative_path }, destination_dir)
+  if ok then
+    return true
+  end
+
+  return false, shell_error(result)
+end
+
+local function copy_configured_workspace_files(workspace)
+  local copy_config = config.copy_files or {}
+  local paths = copy_config.paths or {}
+  if not copy_config.enabled or #paths == 0 then
+    return true
+  end
+
+  local source_branch = copy_config.source_branch or DEFAULT_BASE_BRANCH
+  local source_ref = resolve_git_ref(workspace.bare_repo_dir, source_branch)
+  local source_worktree = source_worktree_for_branch(workspace.root_dir, workspace.bare_repo_dir, source_branch)
+  local overwrite = copy_config.overwrite ~= false
+  local failures = {}
+
+  for _, relative_path in ipairs(paths) do
+    if not is_safe_relative_path(relative_path) then
+      table.insert(failures, string.format("%s: invalid relative path", tostring(relative_path)))
+    else
+      local ok, err = copy_file_from_worktree(source_worktree, workspace.worktree_dir, relative_path, overwrite)
+      if not ok and source_ref then
+        ok, err = restore_file_from_ref(source_ref, workspace.worktree_dir, relative_path, overwrite)
+      end
+
+      if not ok then
+        table.insert(failures, string.format("%s: %s", relative_path, err or "copy failed"))
+      end
+    end
+  end
+
+  if #failures > 0 then
+    notify(
+      string.format("Could not copy workspace files from '%s': %s", source_branch, table.concat(failures, "; ")),
+      vim.log.levels.WARN
+    )
+    return false
+  end
+
+  return true
+end
+
+local function current_branch(worktree_dir)
+  local ok, result = run_git({ "branch", "--show-current" }, worktree_dir)
+  if not ok then
+    return nil, shell_error(result)
+  end
+
+  local branch = trim(result.stdout)
+  if branch == "" then
+    return nil, "Current workspace is in detached HEAD state"
+  end
+
+  return branch
+end
+
+local function is_protected_branch(branch)
+  local protected = (config.delete_workspace or {}).protected_branches or {}
+  for _, protected_branch in ipairs(protected) do
+    if branch == protected_branch then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function fetch_delete_target(bare_repo_dir)
+  local remote = (config.delete_workspace or {}).fetch_remote
+  if remote == false or remote == nil or remote == "" then
+    return true
+  end
+
+  local ok, result = run_git({ "fetch", tostring(remote) }, bare_repo_dir)
+  if ok then
+    return true
+  end
+
+  return false, string.format("Failed to fetch '%s': %s", remote, shell_error(result))
+end
+
+local function ensure_ref_exists(bare_repo_dir, ref)
+  local ok, result = run_git({ "rev-parse", "--verify", ref .. "^{commit}" }, bare_repo_dir)
+  if ok then
+    return true
+  end
+
+  return false, string.format("Could not resolve merge target '%s': %s", ref, shell_error(result))
+end
+
+local function ensure_branch_merged(workspace)
+  local delete_config = config.delete_workspace or {}
+  local merged_into = delete_config.merged_into or "origin/main"
+
+  local fetch_ok, fetch_err = fetch_delete_target(workspace.bare_repo_dir)
+  if not fetch_ok then
+    return false, fetch_err
+  end
+
+  local ref_ok, ref_err = ensure_ref_exists(workspace.bare_repo_dir, merged_into)
+  if not ref_ok then
+    return false, ref_err
+  end
+
+  local ok = run_git({ "merge-base", "--is-ancestor", workspace.branch, merged_into }, workspace.bare_repo_dir)
+  if ok then
+    return true
+  end
+
+  return false, string.format("Branch '%s' is not fully merged into '%s'", workspace.branch, merged_into)
+end
+
+local function worktree_status(worktree_dir)
+  local ok, result = run_git({ "status", "--porcelain", "--untracked-files=all" }, worktree_dir)
+  if not ok then
+    return nil, shell_error(result)
+  end
+
+  return trim(result.stdout)
+end
+
+local function is_path_inside(path, dir)
+  if path == "" then
+    return false
+  end
+
+  local normalized_path = vim.fs.normalize(path)
+  local normalized_dir = vim.fs.normalize(dir)
+  return normalized_path == normalized_dir or vim.startswith(normalized_path, normalized_dir .. "/")
+end
+
+local function tab_has_buffer(tab, buf)
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+    if vim.api.nvim_win_get_buf(win) == buf then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function modified_workspace_buffer(worktree_dir)
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].modified then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if is_path_inside(name, worktree_dir) then
+        return name
+      end
+      if name == "" and tab_has_buffer(current_tab, buf) then
+        return "[No Name]"
+      end
+    end
+  end
+end
+
+local function resolve_delete_workspace()
+  local context, context_err = resolve_workspace_context()
+  if not context then
+    return nil, context_err
+  end
+  if context.mode ~= "worktree" then
+    return nil, "Deleteworkspace must be run from inside a workspace worktree"
+  end
+
+  local branch, branch_err = current_branch(context.current_dir)
+  if not branch then
+    return nil, branch_err
+  end
+  if is_protected_branch(branch) then
+    return nil, string.format("Refusing to delete protected branch '%s'", branch)
+  end
+
+  return {
+    branch = branch,
+    worktree_dir = context.current_dir,
+    root_dir = context.root_dir,
+    bare_repo_dir = context.bare_repo_dir,
+  }
+end
+
+local function ensure_workspace_clean(workspace)
+  local modified_buffer = modified_workspace_buffer(workspace.worktree_dir)
+  if modified_buffer then
+    return false, string.format("Workspace has an unsaved buffer: %s", modified_buffer)
+  end
+
+  local status, status_err = worktree_status(workspace.worktree_dir)
+  if status == nil then
+    return false, status_err
+  end
+  if status ~= "" then
+    return false, "Workspace has uncommitted or untracked changes"
+  end
+
+  return true
+end
+
+local function remove_workspace_worktree(workspace)
+  pcall(function()
+    require("opencode.terminal").close()
+  end)
+  vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
+
+  local args = { "worktree", "remove" }
+  if (config.delete_workspace or {}).force_remove ~= false then
+    table.insert(args, "--force")
+  end
+  table.insert(args, workspace.worktree_dir)
+
+  local ok, result = run_git(args, workspace.bare_repo_dir)
+  if ok then
+    return true
+  end
+
+  return false, shell_error(result)
+end
+
+local function delete_workspace_branch(workspace)
+  local ok, result = run_git({ "branch", "-D", workspace.branch }, workspace.bare_repo_dir)
+  if ok then
+    return true
+  end
+
+  return false, shell_error(result)
+end
+
+local function leave_deleted_workspace(workspace)
+  vim.t.workspace_name = nil
+  redraw_tabline()
+
+  if #vim.api.nvim_list_tabpages() > 1 then
+    pcall(vim.cmd, "tabclose!")
+    return
+  end
+
+  pcall(vim.cmd, "enew!")
+  vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
+  pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(workspace.root_dir))
+end
+
+local function parse_new_workspace_args(opts)
   local parts = vim.split(vim.trim(opts.args or ""), "%s+", { trimempty = true })
   if #parts < 1 or #parts > 2 then
-    return nil, "Usage: :NewWorktree <feature_name> [base_branch]"
+    return nil, "Usage: :Newworkspace <feature_name> [base_branch]"
   end
 
   local feature_name = parts[1]
@@ -192,10 +563,10 @@ local function parse_new_worktree_args(opts)
   }
 end
 
-local function parse_open_worktree_args(opts)
+local function parse_open_workspace_args(opts)
   local parts = vim.split(vim.trim(opts.args or ""), "%s+", { trimempty = true })
   if #parts ~= 1 then
-    return nil, "Usage: :OpenWorktree <directory_name>"
+    return nil, "Usage: :Openworkspace <directory_name>"
   end
 
   local directory_name = parts[1]
@@ -249,7 +620,7 @@ local function setup_workspace_style_autocmd()
   })
 end
 
-local function complete_open_worktree(arg_lead)
+local function complete_open_workspace(arg_lead)
   local context = resolve_workspace_context()
   if not context then
     return {}
@@ -300,7 +671,7 @@ local function tab_fallback_name(tab)
   return tail ~= "" and tail or name
 end
 
-local function redraw_tabline()
+redraw_tabline = function()
   pcall(vim.cmd, "redrawtabline")
 end
 
@@ -412,6 +783,8 @@ local function create_worktree(feature_name, base_branch)
   return {
     feature_name = feature_name,
     worktree_dir = worktree_dir,
+    root_dir = context.root_dir,
+    bare_repo_dir = context.bare_repo_dir,
     base_ref = base_ref,
     reuse_current_tab = context.mode == "root",
   }
@@ -455,12 +828,14 @@ local function open_existing_worktree(directory_name)
   }
 end
 
-function M.new_worktree(feature_name, base_branch)
+function M.new_workspace(feature_name, base_branch)
   local worktree, err = create_worktree(feature_name, base_branch or DEFAULT_BASE_BRANCH)
   if not worktree then
     notify(err, vim.log.levels.ERROR)
     return false
   end
+
+  copy_configured_workspace_files(worktree)
 
   local ok, setup_err = setup_workspace_tab(worktree.worktree_dir, worktree.feature_name, worktree.reuse_current_tab)
   if not ok then
@@ -472,7 +847,7 @@ function M.new_worktree(feature_name, base_branch)
   return true
 end
 
-function M.open_worktree(directory_name)
+function M.open_workspace(directory_name)
   local worktree, err = open_existing_worktree(directory_name)
   if not worktree then
     notify(err, vim.log.levels.ERROR)
@@ -489,39 +864,85 @@ function M.open_worktree(directory_name)
   return true
 end
 
-function M.new_worktree_command(opts)
-  local parsed, err = parse_new_worktree_args(opts)
+function M.delete_workspace()
+  local workspace, workspace_err = resolve_delete_workspace()
+  if not workspace then
+    notify(workspace_err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local clean_ok, clean_err = ensure_workspace_clean(workspace)
+  if not clean_ok then
+    notify(clean_err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local merged_ok, merged_err = ensure_branch_merged(workspace)
+  if not merged_ok then
+    notify(merged_err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local remove_ok, remove_err = remove_workspace_worktree(workspace)
+  if not remove_ok then
+    notify(string.format("Could not remove workspace '%s': %s", workspace.branch, remove_err), vim.log.levels.ERROR)
+    return false
+  end
+
+  local branch_ok, branch_err = delete_workspace_branch(workspace)
+  if not branch_ok then
+    notify(string.format("Removed workspace but could not delete branch '%s': %s", workspace.branch, branch_err), vim.log.levels.ERROR)
+    return false
+  end
+
+  notify(string.format("Deleted workspace and branch '%s'", workspace.branch))
+  leave_deleted_workspace(workspace)
+  return true
+end
+
+function M.new_workspace_command(opts)
+  local parsed, err = parse_new_workspace_args(opts)
   if not parsed then
     notify(err, vim.log.levels.ERROR)
     return
   end
 
-  M.new_worktree(parsed.feature_name, parsed.base_branch)
+  M.new_workspace(parsed.feature_name, parsed.base_branch)
 end
 
-function M.open_worktree_command(opts)
-  local parsed, err = parse_open_worktree_args(opts)
+function M.open_workspace_command(opts)
+  local parsed, err = parse_open_workspace_args(opts)
   if not parsed then
     notify(err, vim.log.levels.ERROR)
     return
   end
 
-  M.open_worktree(parsed.directory_name)
+  M.open_workspace(parsed.directory_name)
 end
 
-function M.setup()
+function M.delete_workspace_command()
+  M.delete_workspace()
+end
+
+function M.setup(opts)
+  setup_config(opts)
   setup_tabline()
   setup_workspace_style_autocmd()
 
-  vim.api.nvim_create_user_command("NewWorktree", M.new_worktree_command, {
+  vim.api.nvim_create_user_command("Newworkspace", M.new_workspace_command, {
     nargs = "+",
-    desc = "Create a new git worktree in the workflow layout",
+    desc = "Create a new workspace in the workflow layout",
   })
 
-  vim.api.nvim_create_user_command("OpenWorktree", M.open_worktree_command, {
+  vim.api.nvim_create_user_command("Openworkspace", M.open_workspace_command, {
     nargs = 1,
-    complete = complete_open_worktree,
-    desc = "Open an existing git worktree in the workflow layout",
+    complete = complete_open_workspace,
+    desc = "Open an existing workspace in the workflow layout",
+  })
+
+  vim.api.nvim_create_user_command("Deleteworkspace", M.delete_workspace_command, {
+    nargs = 0,
+    desc = "Delete the current workspace after verifying it is merged",
   })
 end
 

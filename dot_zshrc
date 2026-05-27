@@ -8,9 +8,9 @@ fi
 # History file location
 HISTFILE=~/.zsh_history
 # Number of commands to remember in memory
-HISTSIZE=100
+HISTSIZE=1000
 # Number of commands to save to file
-SAVEHIST=100
+SAVEHIST=1000
 # Ignore commands that start with a space
 setopt HIST_IGNORE_SPACE
 

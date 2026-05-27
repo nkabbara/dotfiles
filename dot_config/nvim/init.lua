@@ -848,16 +848,73 @@ require("lazy").setup({
       --  You could remove this setup call if you dont like it,
       --  and try some other statusline plugin
       local statusline = require("mini.statusline")
-      -- set use_icons to true if you have a Nerd Font
-      statusline.setup({ use_icons = vim.g.have_nerd_font })
+
+      local function escape_statusline_text(text)
+        return tostring(text or ""):gsub("%%", "%%%%")
+      end
+
+      ---@diagnostic disable-next-line: duplicate-set-field
+      statusline.section_filename = function(args)
+        local buf = vim.api.nvim_get_current_buf()
+        local name = vim.api.nvim_buf_get_name(buf)
+        if name == "" then
+          name = "[No Name]"
+        elseif statusline.is_truncated((args or {}).trunc_width) then
+          name = vim.fn.fnamemodify(name, ":.")
+        end
+
+        local modified = vim.bo[buf].modified and "[+]" or ""
+        local readonly = vim.bo[buf].readonly and "[-]" or ""
+        return escape_statusline_text(name .. modified .. readonly)
+      end
 
       -- You can configure sections in the statusline by overriding their
       -- default behavior. For example, here we set the section for
       -- cursor location to LINE:COLUMN
       ---@diagnostic disable-next-line: duplicate-set-field
       statusline.section_location = function()
-        return "%2l:%-2v"
+        return string.format("%2d:%-2d", vim.fn.line("."), vim.fn.virtcol("."))
       end
+
+      local function active_statusline_content()
+        local mode, mode_hl = statusline.section_mode({ trunc_width = 120 })
+        local git = statusline.section_git({ trunc_width = 40 })
+        local diff = statusline.section_diff({ trunc_width = 75 })
+        local diagnostics = statusline.section_diagnostics({ trunc_width = 75 })
+        local lsp = statusline.section_lsp({ trunc_width = 75 })
+        local filename = statusline.section_filename({ trunc_width = 140 })
+        local fileinfo = statusline.section_fileinfo({ trunc_width = 120 })
+        local location = statusline.section_location({ trunc_width = 75 })
+        local search = statusline.section_searchcount({ trunc_width = 75 })
+
+        return statusline.combine_groups({
+          { hl = mode_hl, strings = { mode } },
+          { hl = "MiniStatuslineDevinfo", strings = { git, diff, diagnostics, lsp } },
+          "%<",
+          { hl = "MiniStatuslineFilename", strings = { filename } },
+          "%=",
+          { hl = "MiniStatuslineFileinfo", strings = { fileinfo } },
+          { hl = mode_hl, strings = { search, location } },
+        })
+      end
+
+      local function workflow_active_statusline_content()
+        local ok, workspace_win = pcall(function()
+          return require("custom.workflow.win_manager").statusline_win()
+        end)
+
+        if ok and workspace_win and vim.api.nvim_win_is_valid(workspace_win) then
+          return vim.api.nvim_win_call(workspace_win, active_statusline_content)
+        end
+
+        return active_statusline_content()
+      end
+
+      -- Set use_icons to true if you have a Nerd Font.
+      statusline.setup({
+        use_icons = vim.g.have_nerd_font,
+        content = { active = workflow_active_statusline_content },
+      })
 
       require("mini.icons").setup()
       -- require("mini.pairs").setup()

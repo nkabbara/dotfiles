@@ -12,6 +12,8 @@ local M = {}
 local opencode_runtime = require("custom.workflow.opencode")
 
 local WORKFLOW_WIDTH = 0.40
+local FOCUS_FLOAT_ZINDEX = 45
+local BACKDROP_ZINDEX = 40
 local OPENCODE_NORMAL_BORDER_HL = "OpencodeNormalModeBorder"
 local OPENCODE_NORMAL_BORDER_COLOR = "#4f8680"
 local FOCUS_FLOAT_BORDER = { "", "", "", { " ", "NormalFloat" }, "", "", "", { " ", "NormalFloat" } }
@@ -26,6 +28,7 @@ local OPENCODE_NORMAL_FLOAT_BORDER = {
   { " ", OPENCODE_NORMAL_BORDER_HL },
 }
 local tab_states = {}
+local previous_workflow_laststatus = nil
 local WORKSPACE_WIN_OPTS = {
   number = vim.o.number,
   relativenumber = vim.o.relativenumber,
@@ -67,6 +70,21 @@ end
 local function is_float(win)
   local config = vim.api.nvim_win_get_config(win)
   return config.relative ~= ""
+end
+
+local function is_opencode_terminal_win(win, opencode_cmd)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return false
+  end
+
+  local buf = vim.api.nvim_win_get_buf(win)
+  if vim.bo[buf].buftype ~= "terminal" then
+    return false
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf):lower()
+  local needle = (opencode_cmd or ""):lower()
+  return (needle ~= "" and name:find(needle, 1, true) ~= nil) or name:find("opencode", 1, true) ~= nil
 end
 
 local function is_last_normal_win(win)
@@ -156,9 +174,25 @@ local function nudge_terminal_redraw(win)
   end
 end
 
+local function enable_workflow_statusline()
+  if previous_workflow_laststatus == nil then
+    previous_workflow_laststatus = vim.o.laststatus
+  end
+
+  if vim.o.laststatus ~= 3 then
+    vim.o.laststatus = 3
+    pcall(vim.cmd, "redrawstatus")
+  end
+end
+
+local function focus_float_height()
+  local statusline_height = (vim.o.laststatus == 0) and 0 or 1
+  return math.max(1, vim.o.lines - vim.o.cmdheight - statusline_height)
+end
+
 local function centered_float_opts()
   local width = math.max(60, math.floor(vim.o.columns * WORKFLOW_WIDTH))
-  local total_height = vim.o.lines - vim.o.cmdheight - ((vim.o.laststatus == 3) and 1 or 0)
+  local total_height = focus_float_height()
 
   return {
     relative = "editor",
@@ -168,7 +202,7 @@ local function centered_float_opts()
     height = total_height,
     col = math.floor((vim.o.columns - width) / 2),
     row = 0,
-    zindex = 60,
+    zindex = FOCUS_FLOAT_ZINDEX,
   }
 end
 
@@ -343,7 +377,7 @@ local function close_workspace_focus(state, opts)
 end
 
 local function ensure_backdrop(state)
-  local total_height = vim.o.lines - vim.o.cmdheight - ((vim.o.laststatus == 3) and 1 or 0)
+  local total_height = focus_float_height()
 
   vim.api.nvim_set_hl(0, "OpencodeBackdrop", { bg = "#000000", fg = "#000000" })
 
@@ -361,7 +395,7 @@ local function ensure_backdrop(state)
     col = 0,
     width = vim.o.columns,
     height = total_height,
-    zindex = 50,
+    zindex = BACKDROP_ZINDEX,
   }
 
   if state.backdrop_win and vim.api.nvim_win_is_valid(state.backdrop_win) then
@@ -395,14 +429,9 @@ function M.find_opencode_win(opencode_cmd, tab)
     return nil
   end
 
-  local needle = (opencode_cmd or ""):lower()
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
-    local buf = vim.api.nvim_win_get_buf(win)
-    if vim.bo[buf].buftype == "terminal" then
-      local name = vim.api.nvim_buf_get_name(buf):lower()
-      if (needle ~= "" and name:find(needle, 1, true)) or name:find("opencode", 1, true) then
-        return win
-      end
+    if is_opencode_terminal_win(win, opencode_cmd) then
+      return win
     end
   end
 end
@@ -462,7 +491,47 @@ local function is_opencode_float_open(opencode_cmd, tab)
   return cfg.relative ~= ""
 end
 
+local function has_workflow_ui_open()
+  for _, state in pairs(tab_states) do
+    if is_workspace_focus_open(state) then
+      return true
+    end
+  end
+
+  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    local win = M.find_opencode_win(nil, tab)
+    if win and vim.api.nvim_win_is_valid(win) then
+      return true
+    end
+  end
+
+  return false
+end
+
+local function restore_workflow_statusline_if_unused()
+  if previous_workflow_laststatus == nil then
+    return
+  end
+  if has_workflow_ui_open() then
+    return
+  end
+
+  vim.o.laststatus = previous_workflow_laststatus
+  previous_workflow_laststatus = nil
+  pcall(vim.cmd, "redrawstatus")
+end
+
+function M.sync_statusline()
+  if has_workflow_ui_open() then
+    enable_workflow_statusline()
+  else
+    restore_workflow_statusline_if_unused()
+  end
+end
+
 local function sync_backdrop(state, opencode_cmd, tab)
+  M.sync_statusline()
+
   if is_workspace_focus_open(state) or is_opencode_float_open(opencode_cmd, tab) then
     ensure_backdrop(state)
   else
@@ -540,6 +609,18 @@ local function find_workspace_win(opencode_cmd, tab)
   end
 end
 
+function M.statusline_win()
+  local current_win = vim.api.nvim_get_current_win()
+  if not is_opencode_terminal_win(current_win) then
+    return nil
+  end
+
+  local workspace_win = find_workspace_win(nil, vim.api.nvim_win_get_tabpage(current_win))
+  if workspace_win and vim.api.nvim_win_is_valid(workspace_win) then
+    return workspace_win
+  end
+end
+
 function M.focus_workspace_win(opencode_cmd)
   local state, tab = get_state()
   opencode_cmd = resolve_opencode_cmd(tab, opencode_cmd)
@@ -549,6 +630,8 @@ function M.focus_workspace_win(opencode_cmd)
     sync_backdrop(state, opencode_cmd, tab)
     return
   end
+
+  enable_workflow_statusline()
 
   local opencode_win = M.find_opencode_win(opencode_cmd, tab)
   if opencode_win and vim.api.nvim_win_is_valid(opencode_win) then
@@ -573,6 +656,7 @@ function M.focus_workspace_win(opencode_cmd)
 
   local win = find_workspace_win(opencode_cmd, tab)
   if not win then
+    sync_backdrop(state, opencode_cmd, tab)
     vim.notify("No workspace window found", vim.log.levels.WARN, { title = "opencode" })
     return
   end
@@ -587,6 +671,8 @@ function M.focus_opencode_win(opencode_cmd)
   local state, tab = get_state()
   opencode_cmd = resolve_opencode_cmd(tab, opencode_cmd)
   local return_focus_to_workspace = false
+
+  enable_workflow_statusline()
 
   -- Show backdrop first to mask intermediate layout transitions and reduce flicker.
   ensure_backdrop(state)
@@ -627,6 +713,7 @@ function M.focus_opencode_win(opencode_cmd)
     local opencode_win = M.find_opencode_win(opencode_cmd, tab)
     if not opencode_win or not vim.api.nvim_win_is_valid(opencode_win) then
       close_backdrop(state)
+      restore_workflow_statusline_if_unused()
       vim.notify("Could not find opencode window", vim.log.levels.WARN, { title = "opencode" })
       return
     end
@@ -639,6 +726,7 @@ function M.focus_opencode_win(opencode_cmd)
       ensure_backdrop(state)
     else
       close_backdrop(state)
+      M.sync_statusline()
     end
 
     nudge_terminal_redraw(opencode_win)
@@ -664,6 +752,16 @@ vim.api.nvim_create_autocmd({ "ModeChanged", "TermEnter", "TermLeave", "WinEnter
   desc = "Update opencode focus border for terminal normal mode",
   callback = function()
     vim.schedule(sync_opencode_focus_border)
+  end,
+})
+
+local workflow_statusline_group = vim.api.nvim_create_augroup("custom-opencode-workflow-statusline", { clear = true })
+
+vim.api.nvim_create_autocmd({ "BufWinEnter", "TermOpen", "TermClose", "WinClosed", "TabEnter", "TabClosed" }, {
+  group = workflow_statusline_group,
+  desc = "Sync global statusline mode for opencode workflow",
+  callback = function()
+    vim.schedule(M.sync_statusline)
   end,
 })
 

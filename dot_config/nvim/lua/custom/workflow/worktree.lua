@@ -5,6 +5,8 @@ local win_manager = require("custom.workflow.win_manager")
 local DEFAULT_BASE_BRANCH = "main"
 local BARE_REPO_DIRNAME = "repo.git"
 local WORKSPACE_STYLE_GROUP = "custom-worktree-workspace-style"
+local TABLINE_GROUP = "custom-worktree-tabline"
+local TABLINE_GLOBAL = "custom_worktree_tabline"
 
 local function notify(message, level)
   vim.notify(message, level or vim.log.levels.INFO, { title = "workflow" })
@@ -268,12 +270,77 @@ local function complete_open_worktree(arg_lead)
   return matches
 end
 
+local function escape_tabline_text(value)
+  return tostring(value or ""):gsub("%%", "%%%%")
+end
+
+local function tab_workspace_name(tab)
+  local ok, name = pcall(function()
+    return vim.t[tab].workspace_name
+  end)
+
+  if ok and type(name) == "string" and name ~= "" then
+    return name
+  end
+end
+
+local function tab_fallback_name(tab)
+  local ok, win = pcall(vim.api.nvim_tabpage_get_win, tab)
+  if not ok or not (win and vim.api.nvim_win_is_valid(win)) then
+    return "[No Name]"
+  end
+
+  local buf = vim.api.nvim_win_get_buf(win)
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name == "" then
+    return "[No Name]"
+  end
+
+  local tail = vim.fn.fnamemodify(name, ":t")
+  return tail ~= "" and tail or name
+end
+
+local function redraw_tabline()
+  pcall(vim.cmd, "redrawtabline")
+end
+
+function M.tab_label(tab)
+  return tab_workspace_name(tab) or tab_fallback_name(tab)
+end
+
+function M.tabline()
+  local current_tab = vim.api.nvim_get_current_tabpage()
+  local parts = {}
+
+  for tabnr, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    local hl = tab == current_tab and "%#TabLineSel#" or "%#TabLine#"
+    local label = escape_tabline_text(M.tab_label(tab))
+    table.insert(parts, string.format("%%%dT%s %d:%s ", tabnr, hl, tabnr, label))
+  end
+
+  table.insert(parts, "%#TabLineFill#%T")
+  return table.concat(parts)
+end
+
+local function setup_tabline()
+  _G[TABLINE_GLOBAL] = function()
+    return require("custom.workflow.worktree").tabline()
+  end
+
+  vim.o.tabline = "%!v:lua." .. TABLINE_GLOBAL .. "()"
+
+  local group = vim.api.nvim_create_augroup(TABLINE_GROUP, { clear = true })
+  vim.api.nvim_create_autocmd({ "TabEnter", "TabClosed", "BufEnter", "BufWinEnter" }, {
+    group = group,
+    callback = redraw_tabline,
+  })
+end
+
 local function setup_workspace_tab(worktree_dir, workspace_name, reuse_current_tab)
   if not reuse_current_tab then
     vim.cmd.tabnew()
   end
 
-  vim.t.workspace_name = workspace_name
   win_manager.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())
   opencode_runtime.reset_tab_port()
   pcall(function()
@@ -288,6 +355,9 @@ local function setup_workspace_tab(worktree_dir, workspace_name, reuse_current_t
   if actual_dir ~= normalized_dir then
     return false, string.format("Failed to switch tab directory before opening workspace. Expected %s but got %s", normalized_dir, actual_dir)
   end
+
+  vim.t.workspace_name = workspace_name
+  redraw_tabline()
 
   win_manager.apply_workspace_window_style(vim.api.nvim_get_current_win())
   vim.cmd("Oil " .. vim.fn.fnameescape(normalized_dir))
@@ -440,6 +510,7 @@ function M.open_worktree_command(opts)
 end
 
 function M.setup()
+  setup_tabline()
   setup_workspace_style_autocmd()
 
   vim.api.nvim_create_user_command("NewWorktree", M.new_worktree_command, {

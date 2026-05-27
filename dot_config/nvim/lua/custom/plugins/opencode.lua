@@ -56,6 +56,7 @@ return {
             split = "right",
             width = math.floor(vim.o.columns * 0.5),
           })
+          vim.schedule(opencode_workflow.sync_statusline)
         end,
         toggle = function()
           opencode_workflow.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())
@@ -63,10 +64,12 @@ return {
             split = "right",
             width = math.floor(vim.o.columns * 0.5),
           })
+          vim.schedule(opencode_workflow.sync_statusline)
         end,
         stop = function()
           opencode_workflow.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())
           require("opencode.terminal").close()
+          vim.schedule(opencode_workflow.sync_statusline)
         end,
       },
     }

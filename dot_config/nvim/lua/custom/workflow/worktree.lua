@@ -480,6 +480,23 @@ local function resolve_delete_workspace()
   }
 end
 
+local function resolve_close_workspace()
+  local context, context_err = resolve_workspace_context()
+  if not context then
+    return nil, context_err
+  end
+  if context.mode ~= "worktree" then
+    return nil, "Closeworkspace must be run from inside a workspace worktree"
+  end
+
+  return {
+    worktree_dir = context.current_dir,
+    root_dir = context.root_dir,
+    bare_repo_dir = context.bare_repo_dir,
+    name = vim.t.workspace_name or vim.fs.basename(context.current_dir),
+  }
+end
+
 local function ensure_workspace_clean(workspace)
   local modified_buffer = modified_workspace_buffer(workspace.worktree_dir)
   if modified_buffer then
@@ -538,6 +555,29 @@ local function leave_deleted_workspace(workspace)
   pcall(vim.cmd, "enew!")
   vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
   pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(workspace.root_dir))
+end
+
+local function leave_workspace(workspace)
+  vim.t.workspace_name = nil
+  redraw_tabline()
+
+  if #vim.api.nvim_list_tabpages() > 1 then
+    local ok, err = pcall(vim.cmd, "tabclose")
+    if ok then
+      return true
+    end
+
+    return false, err
+  end
+
+  vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
+  pcall(vim.cmd, "silent! only")
+  local ok, err = pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(workspace.root_dir))
+  if ok then
+    return true
+  end
+
+  return false, err
 end
 
 local function parse_new_workspace_args(opts)
@@ -864,6 +904,29 @@ function M.open_workspace(directory_name)
   return true
 end
 
+function M.close_workspace()
+  local workspace, workspace_err = resolve_close_workspace()
+  if not workspace then
+    notify(workspace_err, vim.log.levels.ERROR)
+    return false
+  end
+
+  local modified_buffer = modified_workspace_buffer(workspace.worktree_dir)
+  if modified_buffer then
+    notify(string.format("Workspace has an unsaved buffer: %s", modified_buffer), vim.log.levels.ERROR)
+    return false
+  end
+
+  local ok, err = leave_workspace(workspace)
+  if not ok then
+    notify(string.format("Could not close workspace '%s': %s", workspace.name, err), vim.log.levels.ERROR)
+    return false
+  end
+
+  notify(string.format("Closed workspace '%s'", workspace.name))
+  return true
+end
+
 function M.delete_workspace()
   local workspace, workspace_err = resolve_delete_workspace()
   if not workspace then
@@ -920,6 +983,10 @@ function M.open_workspace_command(opts)
   M.open_workspace(parsed.directory_name)
 end
 
+function M.close_workspace_command()
+  M.close_workspace()
+end
+
 function M.delete_workspace_command()
   M.delete_workspace()
 end
@@ -938,6 +1005,11 @@ function M.setup(opts)
     nargs = 1,
     complete = complete_open_workspace,
     desc = "Open an existing workspace in the workflow layout",
+  })
+
+  vim.api.nvim_create_user_command("Closeworkspace", M.close_workspace_command, {
+    nargs = 0,
+    desc = "Close the current workspace tab",
   })
 
   vim.api.nvim_create_user_command("Deleteworkspace", M.delete_workspace_command, {

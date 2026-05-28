@@ -35,6 +35,10 @@ Opens an existing sibling worktree directory that lives next to `repo.git`. It v
 
 If the current tab is at the project root, the command reuses that tab for the selected worktree. If the current tab is already in a worktree, it opens the selected worktree in a new tab. The target tab is then set up the same way as `:Newworkspace`: tab-local directory changed to the worktree, Oil opened for that directory, and opencode opened in the standard side-by-side workflow layout.
 
+## `:Closeworkspace`
+
+Closes the current workspace tab. If it is the only tab, it keeps Neovim open, changes the tab-local directory back to the project root where `repo.git` lives, and opens Oil there. It refuses to close if the workspace has unsaved buffers.
+
 ## `:Deleteworkspace`
 
 Deletes the current workspace worktree and its git branch. It fetches `fetch_remote`, verifies the current branch tip is an ancestor of `merged_into`, refuses protected branches like `main` and `master`, and refuses deletion if the workspace has unsaved buffers or uncommitted/untracked git changes.

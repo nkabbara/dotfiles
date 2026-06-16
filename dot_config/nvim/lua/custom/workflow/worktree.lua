@@ -455,13 +455,30 @@ local function modified_workspace_buffer(worktree_dir)
   end
 end
 
+local function delete_workspace_buffers(worktree_dir)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if is_path_inside(name, worktree_dir) then
+        pcall(vim.api.nvim_buf_delete, buf, { force = true })
+      else
+        local ok, lock = pcall(vim.api.nvim_buf_get_var, buf, "bundler_lock")
+        if ok and type(lock) == "string" and is_path_inside(lock, worktree_dir) then
+          pcall(vim.api.nvim_buf_del_var, buf, "bundler_lock")
+          pcall(vim.api.nvim_buf_del_var, buf, "bundler_gem")
+        end
+      end
+    end
+  end
+end
+
 local function resolve_delete_workspace()
   local context, context_err = resolve_workspace_context()
   if not context then
     return nil, context_err
   end
   if context.mode ~= "worktree" then
-    return nil, "Deleteworkspace must be run from inside a workspace worktree"
+    return nil, "WorkspaceDelete must be run from inside a workspace worktree"
   end
 
   local branch, branch_err = current_branch(context.current_dir)
@@ -486,7 +503,7 @@ local function resolve_close_workspace()
     return nil, context_err
   end
   if context.mode ~= "worktree" then
-    return nil, "Closeworkspace must be run from inside a workspace worktree"
+    return nil, "WorkspaceClose must be run from inside a workspace worktree"
   end
 
   return {
@@ -514,14 +531,16 @@ local function ensure_workspace_clean(workspace)
   return true
 end
 
-local function remove_workspace_worktree(workspace)
+local function remove_workspace_worktree(workspace, opts)
+  opts = opts or {}
+
   pcall(function()
     require("opencode.terminal").close()
   end)
   vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
 
   local args = { "worktree", "remove" }
-  if (config.delete_workspace or {}).force_remove ~= false then
+  if opts.force or (config.delete_workspace or {}).force_remove ~= false then
     table.insert(args, "--force")
   end
   table.insert(args, workspace.worktree_dir)
@@ -548,12 +567,16 @@ local function leave_deleted_workspace(workspace)
   redraw_tabline()
 
   if #vim.api.nvim_list_tabpages() > 1 then
-    pcall(vim.cmd, "tabclose!")
+    local ok = pcall(vim.cmd, "tabclose!")
+    if ok then
+      delete_workspace_buffers(workspace.worktree_dir)
+    end
     return
   end
 
   pcall(vim.cmd, "enew!")
   vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
+  delete_workspace_buffers(workspace.worktree_dir)
   pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(workspace.root_dir))
 end
 
@@ -564,6 +587,7 @@ local function leave_workspace(workspace)
   if #vim.api.nvim_list_tabpages() > 1 then
     local ok, err = pcall(vim.cmd, "tabclose")
     if ok then
+      delete_workspace_buffers(workspace.worktree_dir)
       return true
     end
 
@@ -572,6 +596,8 @@ local function leave_workspace(workspace)
 
   vim.cmd("tcd " .. vim.fn.fnameescape(workspace.root_dir))
   pcall(vim.cmd, "silent! only")
+  pcall(vim.cmd, "enew!")
+  delete_workspace_buffers(workspace.worktree_dir)
   local ok, err = pcall(vim.cmd, "Oil " .. vim.fn.fnameescape(workspace.root_dir))
   if ok then
     return true
@@ -583,7 +609,7 @@ end
 local function parse_new_workspace_args(opts)
   local parts = vim.split(vim.trim(opts.args or ""), "%s+", { trimempty = true })
   if #parts < 1 or #parts > 2 then
-    return nil, "Usage: :Newworkspace <feature_name> [base_branch]"
+    return nil, "Usage: :WorkspaceNew <feature_name> [base_branch]"
   end
 
   local feature_name = parts[1]
@@ -606,7 +632,7 @@ end
 local function parse_open_workspace_args(opts)
   local parts = vim.split(vim.trim(opts.args or ""), "%s+", { trimempty = true })
   if #parts ~= 1 then
-    return nil, "Usage: :Openworkspace <directory_name>"
+    return nil, "Usage: :WorkspaceOpen <directory_name>"
   end
 
   local directory_name = parts[1]
@@ -927,26 +953,29 @@ function M.close_workspace()
   return true
 end
 
-function M.delete_workspace()
+function M.delete_workspace(opts)
+  opts = opts or {}
   local workspace, workspace_err = resolve_delete_workspace()
   if not workspace then
     notify(workspace_err, vim.log.levels.ERROR)
     return false
   end
 
-  local clean_ok, clean_err = ensure_workspace_clean(workspace)
-  if not clean_ok then
-    notify(clean_err, vim.log.levels.ERROR)
-    return false
+  if not opts.force then
+    local clean_ok, clean_err = ensure_workspace_clean(workspace)
+    if not clean_ok then
+      notify(clean_err, vim.log.levels.ERROR)
+      return false
+    end
+
+    local merged_ok, merged_err = ensure_branch_merged(workspace)
+    if not merged_ok then
+      notify(merged_err, vim.log.levels.ERROR)
+      return false
+    end
   end
 
-  local merged_ok, merged_err = ensure_branch_merged(workspace)
-  if not merged_ok then
-    notify(merged_err, vim.log.levels.ERROR)
-    return false
-  end
-
-  local remove_ok, remove_err = remove_workspace_worktree(workspace)
+  local remove_ok, remove_err = remove_workspace_worktree(workspace, opts)
   if not remove_ok then
     notify(string.format("Could not remove workspace '%s': %s", workspace.branch, remove_err), vim.log.levels.ERROR)
     return false
@@ -958,7 +987,8 @@ function M.delete_workspace()
     return false
   end
 
-  notify(string.format("Deleted workspace and branch '%s'", workspace.branch))
+  local delete_label = opts.force and "Force deleted" or "Deleted"
+  notify(string.format("%s workspace and branch '%s'", delete_label, workspace.branch))
   leave_deleted_workspace(workspace)
   return true
 end
@@ -987,8 +1017,8 @@ function M.close_workspace_command()
   M.close_workspace()
 end
 
-function M.delete_workspace_command()
-  M.delete_workspace()
+function M.delete_workspace_command(opts)
+  M.delete_workspace({ force = opts and opts.bang or false })
 end
 
 function M.setup(opts)
@@ -996,24 +1026,25 @@ function M.setup(opts)
   setup_tabline()
   setup_workspace_style_autocmd()
 
-  vim.api.nvim_create_user_command("Newworkspace", M.new_workspace_command, {
+  vim.api.nvim_create_user_command("WorkspaceNew", M.new_workspace_command, {
     nargs = "+",
     desc = "Create a new workspace in the workflow layout",
   })
 
-  vim.api.nvim_create_user_command("Openworkspace", M.open_workspace_command, {
+  vim.api.nvim_create_user_command("WorkspaceOpen", M.open_workspace_command, {
     nargs = 1,
     complete = complete_open_workspace,
     desc = "Open an existing workspace in the workflow layout",
   })
 
-  vim.api.nvim_create_user_command("Closeworkspace", M.close_workspace_command, {
+  vim.api.nvim_create_user_command("WorkspaceClose", M.close_workspace_command, {
     nargs = 0,
     desc = "Close the current workspace tab",
   })
 
-  vim.api.nvim_create_user_command("Deleteworkspace", M.delete_workspace_command, {
+  vim.api.nvim_create_user_command("WorkspaceDelete", M.delete_workspace_command, {
     nargs = 0,
+    bang = true,
     desc = "Delete the current workspace after verifying it is merged",
   })
 end

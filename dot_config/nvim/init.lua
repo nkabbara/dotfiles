@@ -343,6 +343,86 @@ require("lazy").setup({
 
       -- See `:help telescope.builtin`
       local builtin = require("telescope.builtin")
+      local function search_tabs()
+        local actions = require("telescope.actions")
+        local action_state = require("telescope.actions.state")
+        local finders = require("telescope.finders")
+        local pickers = require("telescope.pickers")
+        local telescope_config = require("telescope.config").values
+
+        local current_tab = vim.api.nvim_get_current_tabpage()
+        local entries = {}
+
+        for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+          local tabnr = vim.api.nvim_tabpage_get_number(tab)
+          local buffers = {}
+          local seen = {}
+
+          for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+            if vim.api.nvim_win_is_valid(win) then
+              local buf = vim.api.nvim_win_get_buf(win)
+              local name = vim.api.nvim_buf_get_name(buf)
+              if name == "" then
+                name = "[No Name]"
+              else
+                name = vim.fn.fnamemodify(name, ":~:.")
+              end
+
+              if not seen[name] then
+                seen[name] = true
+                table.insert(buffers, name)
+              end
+            end
+          end
+
+          local cwd = ""
+          local ok, tab_cwd = pcall(vim.fn.getcwd, -1, tabnr)
+          if ok and tab_cwd ~= "" then
+            cwd = vim.fn.fnamemodify(tab_cwd, ":~")
+          end
+
+          local label = table.concat(buffers, " | ")
+          if label == "" then
+            label = "[No Name]"
+          end
+
+          local marker = tab == current_tab and "*" or " "
+          table.insert(entries, {
+            tab = tab,
+            display = string.format("%s %d  %s  %s", marker, tabnr, cwd, label),
+            ordinal = string.format("%d %s %s", tabnr, cwd, label),
+          })
+        end
+
+        pickers
+          .new({}, {
+            prompt_title = "Tabs",
+            finder = finders.new_table({
+              results = entries,
+              entry_maker = function(entry)
+                return {
+                  value = entry,
+                  display = entry.display,
+                  ordinal = entry.ordinal,
+                }
+              end,
+            }),
+            sorter = telescope_config.generic_sorter({}),
+            attach_mappings = function(prompt_bufnr)
+              actions.select_default:replace(function()
+                local selection = action_state.get_selected_entry()
+                actions.close(prompt_bufnr)
+                if selection and selection.value and vim.api.nvim_tabpage_is_valid(selection.value.tab) then
+                  vim.api.nvim_set_current_tabpage(selection.value.tab)
+                end
+              end)
+
+              return true
+            end,
+          })
+          :find()
+      end
+
       vim.keymap.set("n", "<leader>sh", builtin.help_tags, { desc = "[S]earch [H]elp" })
       vim.keymap.set("n", "<leader>sk", builtin.keymaps, { desc = "[S]earch [K]eymaps" })
       vim.keymap.set("n", "<leader>sf", builtin.find_files, { desc = "[S]earch [F]iles" })
@@ -353,6 +433,7 @@ require("lazy").setup({
       vim.keymap.set("n", "<leader>sr", builtin.resume, { desc = "[S]earch [R]esume" })
       vim.keymap.set("n", "<leader>s.", builtin.oldfiles, { desc = '[S]earch Recent Files ("." for repeat)' })
       vim.keymap.set("n", "<leader>sb", builtin.buffers, { desc = "[S]earch [B]uffers" })
+      vim.keymap.set("n", "<leader>st", search_tabs, { desc = "[S]earch [T]abs" })
       vim.keymap.set("n", "<leader><leader>", builtin.buffers, { desc = "[ ] Find existing buffers" })
 
       -- Slightly advanced example of overriding default behavior and theme

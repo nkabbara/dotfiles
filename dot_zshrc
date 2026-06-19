@@ -56,32 +56,12 @@ alias cm='chezmoi'
 
 
 # functions
-function uidotsh_token () {
-   op read "op://Personal/ui.sh/password" 2>/dev/null
-}
-
-function opencode () {
-   local token
-   token="$(uidotsh_token)" || {
-      echo "Could not read ui.sh token from 1Password. Run: op signin" >&2
-      return 1
-   }
-
-   UIDOTSH_TOKEN="$token" command opencode "$@"
-}
-
 function oc () {
-   opencode "$@"
+   command opencode "$@"
 }
 
 function va () {
-   local token
-   token="$(uidotsh_token)" || {
-      echo "Could not read ui.sh token from 1Password. Run: op signin" >&2
-      return 1
-   }
-
-   UIDOTSH_TOKEN="$token" nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"
+   nvim "+lua vim.schedule(function() vim.cmd(\"Oil .\") require(\"opencode\").start() end)"
 }
 
 function cdg () {

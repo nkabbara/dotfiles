@@ -776,6 +776,7 @@ end
 local function setup_workspace_tab(worktree_dir, workspace_name, reuse_current_tab)
   if not reuse_current_tab then
     vim.cmd.tabnew()
+    vim.cmd("tabmove $")
   end
 
   win_manager.ensure_opencode_win_closeable(opencode_runtime.command_for_tab())

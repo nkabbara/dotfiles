@@ -353,50 +353,55 @@ require("lazy").setup({
         local current_tab = vim.api.nvim_get_current_tabpage()
         local entries = {}
 
+        local function tab_workspace_name(tab)
+          local ok, name = pcall(function()
+            return vim.t[tab].workspace_name
+          end)
+
+          if ok and type(name) == "string" and name ~= "" then
+            return name
+          end
+        end
+
         for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
           local tabnr = vim.api.nvim_tabpage_get_number(tab)
-          local buffers = {}
-          local seen = {}
-
-          for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
-            if vim.api.nvim_win_is_valid(win) then
-              local buf = vim.api.nvim_win_get_buf(win)
-              local name = vim.api.nvim_buf_get_name(buf)
-              if name == "" then
-                name = "[No Name]"
-              else
-                name = vim.fn.fnamemodify(name, ":~:.")
-              end
-
-              if not seen[name] then
-                seen[name] = true
-                table.insert(buffers, name)
-              end
-            end
-          end
 
           local cwd = ""
           local ok, tab_cwd = pcall(vim.fn.getcwd, -1, tabnr)
           if ok and tab_cwd ~= "" then
-            cwd = vim.fn.fnamemodify(tab_cwd, ":~")
+            cwd = vim.fs.normalize(tab_cwd)
           end
 
-          local label = table.concat(buffers, " | ")
-          if label == "" then
-            label = "[No Name]"
+          local label = tab_workspace_name(tab)
+          if not label then
+            label = cwd ~= "" and vim.fs.basename(cwd) or "[No Name]"
           end
 
           local marker = tab == current_tab and "*" or " "
           table.insert(entries, {
             tab = tab,
-            display = string.format("%s %d  %s  %s", marker, tabnr, cwd, label),
+            tabnr = tabnr,
+            display = string.format("%s %d  %s", marker, tabnr, label),
             ordinal = string.format("%d %s %s", tabnr, cwd, label),
           })
+        end
+
+        table.sort(entries, function(left, right)
+          return left.tabnr < right.tabnr
+        end)
+
+        local default_selection_index = 1
+        for index, entry in ipairs(entries) do
+          if entry.tab == current_tab then
+            default_selection_index = index
+            break
+          end
         end
 
         pickers
           .new({}, {
             prompt_title = "Tabs",
+            default_selection_index = default_selection_index,
             finder = finders.new_table({
               results = entries,
               entry_maker = function(entry)

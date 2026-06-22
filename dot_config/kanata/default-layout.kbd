@@ -14,6 +14,7 @@
   ;; fingers faster.
   tap-time 200
   hold-time 200 
+  hold-time-fast 150
   hold-time-slow 300 
 )
 
@@ -37,8 +38,8 @@
    m (tap-hold $tap-time $hold-time m lalt)
    . (tap-hold $tap-time $hold-time . lctl)
    , (tap-hold $tap-time $hold-time , lalt)
-   q (tap-hold $tap-time $hold-time q lsft)
-   / (tap-hold $tap-time $hold-time / rsft)
+    q (tap-hold-press $tap-time $hold-time-fast q lsft)
+    / (tap-hold-press $tap-time $hold-time-fast / rsft)
    c (tap-hold $tap-time $hold-time c lmeta)
    p (tap-hold $tap-time $hold-time p rmeta)
    d_h (tap-hold $tap-time $hold-time del home)

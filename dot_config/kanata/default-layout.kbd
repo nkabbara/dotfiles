@@ -45,8 +45,8 @@
    m (tap-hold $tap-time $hold-time m lalt)
    . (tap-hold $tap-time $hold-time . lctl)
    , (tap-hold $tap-time $hold-time , lalt)
-    q (tap-hold-press $tap-time $hold-time-fast q lsft)
-    / (tap-hold-press $tap-time $hold-time-fast / rsft)
+   q (tap-hold-press $tap-time $hold-time-fast q lsft)
+   / (tap-hold-press $tap-time $hold-time-fast / rsft)
    c (tap-hold $tap-time $hold-time c lmeta)
    p (tap-hold $tap-time $hold-time p rmeta)
    d_h (tap-hold $tap-time $hold-time del home)
@@ -94,7 +94,7 @@
   XX       b         l      d         w        z    '      f           o        u    j    j    XX    XX 
   tab       @n   @c_uz_r  @c_uz_t   @c_uz_s     g    y   @c_apos_h   @c_apos_a    @e    @i   ;    XX 
   @q        @x       @m       @c         v       XX    k      @p            @,     @.    @/   XX
-  XX XX    XX @l_spanish                       @tmeh          XX XX  
+  XX XX    XX @l_spanish                       @tmeh          XX XX
 )
 
 (deflayer spanish
@@ -123,7 +123,6 @@
              S-1    S--     S-\   S-6   XX      XX       XX  -   S-,   S-.   S-/   XX XX
   XX   XX   XX lmet XX XX 
 )
-
 (deflayer sys2 
 esc     🔅    🔆    @mc   @sls  @dtn  @dnd  ◀◀    ▶⏸    ▶▶    🔇    🔉    🔊
   XX        XX   XX    XX     XX     XX       XX    XX    XX    XX     XX    XX    XX    XX

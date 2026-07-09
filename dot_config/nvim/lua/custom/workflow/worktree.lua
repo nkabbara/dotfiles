@@ -20,9 +20,16 @@ local DEFAULT_CONFIG = {
     force_remove = true,
     protected_branches = { "main", "master" },
   },
+  ui = {
+    keep_tabline_visible = false,
+  },
 }
 local config = vim.deepcopy(DEFAULT_CONFIG)
 local redraw_tabline
+local sync_tabline
+local saved_tabline
+local saved_showtabline
+local tabline_active = false
 
 local function notify(message, level)
   vim.notify(message, level or vim.log.levels.INFO, { title = "workflow" })
@@ -738,6 +745,9 @@ local function tab_fallback_name(tab)
 end
 
 redraw_tabline = function()
+  if sync_tabline then
+    sync_tabline()
+  end
   pcall(vim.cmd, "redrawtabline")
 end
 
@@ -759,18 +769,68 @@ function M.tabline()
   return table.concat(parts)
 end
 
+local function has_workspace_tabs()
+  for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+    if tab_workspace_name(tab) then
+      return true
+    end
+  end
+
+  return false
+end
+
+sync_tabline = function()
+  if has_workspace_tabs() then
+    if not tabline_active then
+      saved_tabline = vim.o.tabline
+      saved_showtabline = vim.o.showtabline
+      tabline_active = true
+    end
+
+    vim.o.tabline = "%!v:lua." .. TABLINE_GLOBAL .. "()"
+    if (config.ui or {}).keep_tabline_visible then
+      vim.o.showtabline = 1
+    end
+  elseif tabline_active then
+    vim.o.tabline = saved_tabline or ""
+    if saved_showtabline ~= nil then
+      vim.o.showtabline = saved_showtabline
+    end
+
+    saved_tabline = nil
+    saved_showtabline = nil
+    tabline_active = false
+  end
+end
+
 local function setup_tabline()
   _G[TABLINE_GLOBAL] = function()
     return require("custom.workflow.worktree").tabline()
   end
 
-  vim.o.tabline = "%!v:lua." .. TABLINE_GLOBAL .. "()"
-
   local group = vim.api.nvim_create_augroup(TABLINE_GROUP, { clear = true })
-  vim.api.nvim_create_autocmd({ "TabEnter", "TabClosed", "BufEnter", "BufWinEnter" }, {
+  vim.api.nvim_create_autocmd({ "TabEnter", "TabNew", "TabClosed", "BufEnter", "BufWinEnter" }, {
     group = group,
     callback = redraw_tabline,
   })
+
+  sync_tabline()
+end
+
+local function open_opencode_split()
+  local lazy_ok, lazy = pcall(require, "lazy")
+  if lazy_ok then
+    pcall(lazy.load, { plugins = { "opencode.nvim" } })
+  end
+
+  if vim.g.opencode_opts and vim.g.opencode_opts.server and type(vim.g.opencode_opts.server.start) == "function" then
+    vim.g.opencode_opts.server.start()
+  else
+    require("opencode.terminal").open(opencode_runtime.command_for_tab(), {
+      split = "right",
+      width = math.floor(vim.o.columns * 0.5),
+    })
+  end
 end
 
 local function setup_workspace_tab(worktree_dir, workspace_name, reuse_current_tab)
@@ -814,12 +874,8 @@ local function setup_workspace_tab(worktree_dir, workspace_name, reuse_current_t
       return
     end
 
-    if vim.g.opencode_opts and vim.g.opencode_opts.server and type(vim.g.opencode_opts.server.toggle) == "function" then
-      vim.g.opencode_opts.server.toggle()
-    else
-      require("opencode").toggle()
-    end
-  end, 20)
+    open_opencode_split()
+  end, 80)
 
   return true
 end
@@ -1024,6 +1080,9 @@ end
 
 function M.setup(opts)
   setup_config(opts)
+  win_manager.setup({
+    keep_tabline_visible = (config.ui or {}).keep_tabline_visible == true,
+  })
   setup_tabline()
   setup_workspace_style_autocmd()
 

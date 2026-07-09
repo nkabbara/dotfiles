@@ -4,6 +4,9 @@ return {
   lazy = false,
   config = function()
     require("custom.workflow").workspace.setup({
+      ui = {
+        keep_tabline_visible = true,
+      },
       copy_files = {
         source_branch = "main",
         paths = {

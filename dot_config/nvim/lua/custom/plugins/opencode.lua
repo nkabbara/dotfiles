@@ -2,6 +2,7 @@ return {
   "nkabbara/opencode.nvim",
   branch = "feature/support-tab-context-upstream",
   name = "opencode.nvim",
+  lazy = false,
   dependencies = {
     {
       -- `snacks.nvim` integration is recommended, but optional

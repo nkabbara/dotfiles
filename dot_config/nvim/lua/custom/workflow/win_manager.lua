@@ -51,6 +51,9 @@ local WORKSPACE_NORMAL_FLOAT_BORDER = {
 }
 local tab_states = {}
 local previous_workflow_laststatus = nil
+local options = {
+  keep_tabline_visible = false,
+}
 local WORKSPACE_WIN_OPTS = {
   number = vim.o.number,
   relativenumber = vim.o.relativenumber,
@@ -207,9 +210,17 @@ local function enable_workflow_statusline()
   end
 end
 
+local function visible_tabline_height()
+  if not options.keep_tabline_visible or vim.o.showtabline == 0 then
+    return 0
+  end
+
+  return (vim.o.showtabline == 2 or #vim.api.nvim_list_tabpages() > 1) and 1 or 0
+end
+
 local function focus_float_height()
   local statusline_height = (vim.o.laststatus == 0) and 0 or 1
-  return math.max(1, vim.o.lines - vim.o.cmdheight - statusline_height)
+  return math.max(1, vim.o.lines - vim.o.cmdheight - statusline_height - visible_tabline_height())
 end
 
 local function centered_float_opts()
@@ -223,7 +234,7 @@ local function centered_float_opts()
     width = width,
     height = total_height,
     col = math.floor((vim.o.columns - width) / 2),
-    row = 0,
+    row = visible_tabline_height(),
     zindex = FOCUS_FLOAT_ZINDEX,
   }
 end
@@ -422,7 +433,7 @@ local function ensure_backdrop(state)
     style = "minimal",
     border = "none",
     focusable = false,
-    row = 0,
+    row = visible_tabline_height(),
     col = 0,
     width = vim.o.columns,
     height = total_height,
@@ -452,6 +463,11 @@ local function ensure_backdrop(state)
   pcall(vim.api.nvim_set_option_value, "colorcolumn", "", { win = state.backdrop_win })
   pcall(vim.api.nvim_set_option_value, "cursorline", false, { win = state.backdrop_win })
   pcall(vim.api.nvim_set_option_value, "cursorcolumn", false, { win = state.backdrop_win })
+end
+
+function M.setup(opts)
+  opts = opts or {}
+  options.keep_tabline_visible = opts.keep_tabline_visible == true
 end
 
 function M.find_opencode_win(opencode_cmd, tab)

@@ -60,7 +60,7 @@
    c_s_tab (tap-hold $tap-time $hold-time C-S-tab M-left)
    c_tab (tap-hold $tap-time $hold-time C-tab M-right)
    m_tab (tap-hold $tap-time $hold-time M-tab C-A-M-m)
-   opt_shift (multi lalt lsft)
+    hx_f1 (tap-dance $tap-time (f1 S-f1))
    mc C-up ;; Mission Control
    sls M-spc ;; Spotlight Search
    dtn S-C-A-M-f5 ;; Dictation
@@ -111,7 +111,7 @@
   XX   XX    XX     XX        XX     XX     XX    XX     XX     XX      XX     XX    XX    XX
   XX   XX    XX     esc       M-`     XX     XX    XX    A-bspc  del      XX     XX    XX    XX 
   XX   XX   @m_tab    @c_s_tab   @c_tab  XX     left  down   up     right   ret    XX    XX 
-  XX   @opt_shift M-c        @m_v         XX      XX     XX     XX     XX      XX      XX     XX    XX
+  XX   @hx_f1 M-c        @m_v         XX      XX     XX     XX     XX      XX      XX     XX    XX
   XX   XX   XX XX XX XX 
 )
 

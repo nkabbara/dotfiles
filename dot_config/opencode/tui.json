@@ -2,6 +2,8 @@
   "$schema": "https://opencode.ai/tui.json",
   "keybinds": {
     "leader": "ctrl+x",
+    "status_view": "none",
+    "prompt_skills": "<leader>s",
     "session_interrupt": "ctrl+;"
   }
 }

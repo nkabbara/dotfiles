@@ -424,6 +424,33 @@
       "pluginName": "mattpocock-skills",
       "installedAt": "2026-08-06T13:21:06.646Z",
       "updatedAt": "2026-08-06T13:21:06.646Z"
+    },
+    "create-payment-credential": {
+      "source": "stripe/link-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/stripe/link-cli.git",
+      "skillPath": "skills/create-payment-credential/SKILL.md",
+      "skillFolderHash": "52df2730a8a7946a8c4be500f239082d5420c91b",
+      "installedAt": "2026-09-18T13:32:22.058Z",
+      "updatedAt": "2026-09-18T13:32:22.058Z"
+    },
+    "financial-insights": {
+      "source": "stripe/link-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/stripe/link-cli.git",
+      "skillPath": "skills/financial-insights/SKILL.md",
+      "skillFolderHash": "87b5a54444811fc1e1970a2bee3d3d7dc72adad7",
+      "installedAt": "2026-09-18T13:32:22.062Z",
+      "updatedAt": "2026-09-18T13:32:22.062Z"
+    },
+    "link-cli": {
+      "source": "stripe/link-cli",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/stripe/link-cli.git",
+      "skillPath": "skills/link-cli/SKILL.md",
+      "skillFolderHash": "3ceff32105823bae929b95b878ffb9125fefb516",
+      "installedAt": "2026-09-18T13:32:22.063Z",
+      "updatedAt": "2026-09-18T13:32:22.063Z"
     }
   },
   "dismissed": {

@@ -87,3 +87,6 @@ bindkey '^R' history-incremental-search-backward
 if [ -z "$SSH_AUTH_SOCK" ]; then
     eval "$(ssh-agent -s)"
 fi
+
+# Amp CLI
+export PATH="$HOME/.local/bin:$PATH"

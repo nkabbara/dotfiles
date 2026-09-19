@@ -18,6 +18,7 @@
     "auto_scroll": false
   },
   "plugin": [
-    "@mohak34/opencode-notifier@latest"
+    "@mohak34/opencode-notifier@latest",
+    "opencode-gpt-imagegen@0.1.12"
   ]
 }

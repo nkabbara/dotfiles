@@ -61,7 +61,8 @@
    c_tab (tap-hold $tap-time $hold-time C-tab M-right)
    m_tab (tap-hold $tap-time $hold-time M-tab C-A-M-m)
    screenshot (tap-hold $tap-time $hold-time (tap-dance $tap-time (M-S-4 M-S-3)) M-S-5)
-    mouse_back mbck
+   voice_cancel S-C-A-M-k ;; Fluid Voice: cancel recording
+   mouse_back (tap-dance 300 (mbck @voice_cancel)) ;; Single tap: dictate; double tap: cancel
    mc C-up ;; Mission Control
    sls M-spc ;; Spotlight Search
    dtn S-C-A-M-f5 ;; Dictation
